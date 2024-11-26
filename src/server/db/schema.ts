@@ -73,6 +73,10 @@ export const insertCourseSchema = createInsertSchema(courses, {
     ),
   price: (schema) =>
     schema.price.min(0, "El precio del curso debe ser mayor a 0"),
+}).omit({
+  id: true,
+  created_at: true,
+  updated_at: true,
 });
 
 export const selectCourseSchema = createSelectSchema(courses).pick({

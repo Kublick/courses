@@ -7,7 +7,7 @@ export default function configureOpenApi(app: AppOpenApi) {
     openapi: "3.0.0",
     info: {
       version: packageJSON.version,
-      title: "Barbershop Api",
+      title: "Incrementa Courses Api",
     },
   });
 

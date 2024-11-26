@@ -23,8 +23,6 @@ export const create: AppRouteHandler<CreateUserRoute> = async (c) => {
     .from(users)
     .where(eq(users.email, email));
 
-  console.log(existingEmail);
-
   if (existingEmail.length > 0) {
     return c.json(
       {
@@ -49,7 +47,7 @@ export const create: AppRouteHandler<CreateUserRoute> = async (c) => {
       id: users.id,
     });
 
-    // TODO send validation email
+  // TODO send validation email
 
   return c.json(newUser, HttpStatusCodes.OK);
 };
