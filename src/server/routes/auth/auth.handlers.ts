@@ -6,7 +6,7 @@ import { eq } from "drizzle-orm";
 import { users } from "@/server/db/schema";
 import { verifyHash } from "@/server/lib/utils";
 import * as HttpStatusCodes from "stoker/http-status-codes";
-import * as HttpStatusPhrases from "stoker/http-status-phrases";
+// import * as HttpStatusPhrases from "stoker/http-status-phrases";
 import {
   createSession,
   generateSessionToken,
@@ -14,7 +14,7 @@ import {
 } from "@/server/auth";
 
 export const login: AppRouteHandler<UserLoginRoute> = async (c) => {
-  c.var.logger.info("Creating user");
+  c.var.logger.info("Loggin In User");
 
   const { email, password } = c.req.valid("json");
 
@@ -26,7 +26,7 @@ export const login: AppRouteHandler<UserLoginRoute> = async (c) => {
   if (!existingUser) {
     return c.json(
       {
-        message: HttpStatusPhrases.NOT_FOUND,
+        message: "Verifique email y contraseña",
       },
       HttpStatusCodes.NOT_FOUND
     );
@@ -37,7 +37,7 @@ export const login: AppRouteHandler<UserLoginRoute> = async (c) => {
   if (!verify) {
     return c.json(
       {
-        message: HttpStatusPhrases.UNAUTHORIZED,
+        message: "Credenciales Incorrectas",
       },
       HttpStatusCodes.UNAUTHORIZED
     );
