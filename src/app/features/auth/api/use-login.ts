@@ -1,5 +1,6 @@
 import { client } from "@/server/client";
 import { useMutation } from "@tanstack/react-query";
+import { redirect } from "next/navigation";
 import { toast } from "sonner";
 
 export const useLogin = () => {
@@ -24,12 +25,14 @@ export const useLogin = () => {
         throw error;
       }
     },
-
+    onSuccess: () => {
+      toast.success("Ingreso Exitoso");
+      redirect("/");
+    },
     onError: (error: unknown) => {
       if (error instanceof Error) {
         toast.error(error.message);
       } else {
-        console.error("An unexpected error occurred:", error);
         toast.error("Hubo un error, contacte al administrador.");
       }
     },
