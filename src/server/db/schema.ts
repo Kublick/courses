@@ -10,6 +10,12 @@ export const users = pgTable("users", (t) => ({
   email: t.text().notNull().unique(),
   password_hash: t.text().notNull(),
   role: roleEnums("role").notNull().default("user"),
+  created_at: t.timestamp("created_at").defaultNow().notNull(),
+  updated_at: t.timestamp("updated_at"),
+  name: t.text(),
+  lastname: t.text(),
+  phone: t.text(),
+  address: t.text(),
 }));
 
 export type User = InferSelectModel<typeof users>;
@@ -17,6 +23,7 @@ export type User = InferSelectModel<typeof users>;
 export const insertUserSchema = createInsertSchema(users, {
   username: (schema) =>
     schema.username.min(3, "El Usurio debe tener al menos 3 caracteres"),
+  email: (schema) => schema.email.email("El email ingresado no es valido"),
 }).pick({
   username: true,
   email: true,
@@ -44,3 +51,35 @@ export const sessions = pgTable("session", (t) => ({
 }));
 
 export type Session = InferSelectModel<typeof sessions>;
+
+export const courses = pgTable("courses", (t) => ({
+  id: t.uuid().primaryKey().defaultRandom(),
+  title: t.text().notNull(),
+  description: t.text().notNull(),
+  price: t.numeric().notNull(),
+  created_at: t.timestamp("created_at").defaultNow().notNull(),
+  updated_at: t.timestamp("updated_at"),
+}));
+
+export type Course = InferSelectModel<typeof courses>;
+
+export const insertCourseSchema = createInsertSchema(courses, {
+  title: (schema) =>
+    schema.title.min(3, "El nombre del curso debe tener al menos 3 caracteres"),
+  description: (schema) =>
+    schema.description.min(
+      10,
+      "El descripcion del curso debe tener al menos 10 caracteres"
+    ),
+  price: (schema) =>
+    schema.price.min(0, "El precio del curso debe ser mayor a 0"),
+});
+
+export const selectCourseSchema = createSelectSchema(courses).pick({
+  id: true,
+  title: true,
+  description: true,
+  price: true,
+  created_at: true,
+  updated_at: true,
+});
