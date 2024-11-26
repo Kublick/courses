@@ -57,6 +57,8 @@ export const courses = pgTable("courses", (t) => ({
   title: t.text().notNull(),
   description: t.text().notNull(),
   price: t.numeric().notNull(),
+  ispublished: t.boolean().default(false),
+  slug: t.text().notNull().unique(),
   created_at: t.timestamp("created_at").defaultNow().notNull(),
   updated_at: t.timestamp("updated_at"),
 }));
@@ -77,6 +79,8 @@ export const insertCourseSchema = createInsertSchema(courses, {
   id: true,
   created_at: true,
   updated_at: true,
+  slug: true,
+  ispublished: true,
 });
 
 export const selectCourseSchema = createSelectSchema(courses).pick({
