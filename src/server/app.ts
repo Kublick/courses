@@ -4,6 +4,7 @@ import index from "./routes/index.route";
 import auth from "./routes/auth/auth.index";
 import user from "./routes/users/users.index";
 import courses from "./routes/courses/courses.index";
+import lectures from "./routes/lectures/lectures.index";
 
 const app = createApp();
 
@@ -14,7 +15,8 @@ const routes = app
   .route("/", index)
   .route("/", auth)
   .route("/", user)
-  .route("/", courses);
+  .route("/", courses)
+  .route("/", lectures);
 
 export type AppType = typeof routes;
 

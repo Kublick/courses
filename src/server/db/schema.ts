@@ -1,4 +1,4 @@
-import { InferSelectModel } from "drizzle-orm";
+import { InferSelectModel, relations } from "drizzle-orm";
 import { pgEnum, pgTable } from "drizzle-orm/pg-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 
@@ -57,7 +57,7 @@ export const courses = pgTable("courses", (t) => ({
   title: t.text().notNull(),
   description: t.text().notNull(),
   price: t.numeric().notNull(),
-  ispublished: t.boolean().default(false),
+  is_published: t.boolean().default(false),
   slug: t.text().notNull().unique(),
   created_at: t.timestamp("created_at").defaultNow().notNull(),
   updated_at: t.timestamp("updated_at"),
@@ -80,7 +80,7 @@ export const insertCourseSchema = createInsertSchema(courses, {
   created_at: true,
   updated_at: true,
   slug: true,
-  ispublished: true,
+  is_published: true,
 });
 
 export const selectCourseSchema = createSelectSchema(courses).pick({
@@ -88,6 +88,90 @@ export const selectCourseSchema = createSelectSchema(courses).pick({
   title: true,
   description: true,
   price: true,
+  created_at: true,
+  updated_at: true,
+  slug: true,
+  is_published: true,
+});
+
+export const sections = pgTable("sections", (t) => ({
+  id: t.uuid().primaryKey().defaultRandom(),
+  course_id: t
+    .uuid()
+    .notNull()
+    .references(() => courses.id),
+  title: t.text().notNull(),
+  created_at: t.timestamp("created_at").defaultNow().notNull(),
+  updated_at: t.timestamp("updated_at"),
+}));
+
+export type Section = InferSelectModel<typeof sections>;
+
+export const insertSectionSchema = createInsertSchema(sections, {
+  title: (schema) =>
+    schema.title.min(3, "El nombre del curso debe tener al menos 3 caracteres"),
+}).omit({
+  id: true,
+  created_at: true,
+  updated_at: true,
+});
+
+export const sectionRelations = relations(sections, ({ one, many }) => ({
+  course: one(courses, {
+    fields: [sections.course_id],
+    references: [courses.id],
+  }),
+  lectures: many(lectures),
+}));
+
+export const lectures = pgTable("lectures", (t) => ({
+  id: t.uuid().primaryKey().defaultRandom(),
+  section_id: t
+    .uuid()
+    .notNull()
+    .references(() => sections.id),
+  title: t.text().notNull(),
+  description: t.text(),
+  content_type: t.text(),
+  content_url: t.text(),
+  created_at: t.timestamp("created_at").defaultNow().notNull(),
+  updated_at: t.timestamp("updated_at"),
+}));
+
+export const lectureRelations = relations(lectures, ({ one, many }) => ({
+  section: one(sections, {
+    fields: [lectures.section_id],
+    references: [sections.id],
+  }),
+}));
+
+export type Lecture = InferSelectModel<typeof lectures>;
+
+export const insertLectureSchema = createInsertSchema(lectures, {
+  title: (schema) =>
+    schema.title.min(3, "El nombre del curso debe tener al menos 3 caracteres"),
+  description: (schema) =>
+    schema.description.min(
+      10,
+      "El descripcion del curso debe tener al menos 10 caracteres"
+    ),
+  content_type: (schema) =>
+    schema.content_type.min(1, "El tipo de contenido es requerido"),
+  content_url: (schema) => schema.content_url.url(),
+  section_id: (schema) =>
+    schema.section_id.min(1, "Ingrese a que capitulo pertenece"),
+}).omit({
+  id: true,
+  created_at: true,
+  updated_at: true,
+});
+
+export const selectLectureSchema = createSelectSchema(lectures).pick({
+  id: true,
+  title: true,
+  description: true,
+  content_type: true,
+  content_url: true,
   created_at: true,
   updated_at: true,
 });
