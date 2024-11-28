@@ -9,10 +9,13 @@ import { eq } from "drizzle-orm";
 import { Context } from "hono";
 import { setCookie, deleteCookie } from "hono/cookie";
 
+const DAY_IN_MS = 1000 * 60 * 60 * 24;
+
 export function generateSessionToken(): string {
   const bytes = new Uint8Array(20);
   crypto.getRandomValues(bytes);
-  return encodeBase32LowerCaseNoPadding(bytes);
+  const token = encodeBase32LowerCaseNoPadding(bytes);
+  return token;
 }
 
 export async function createSession(
@@ -20,11 +23,13 @@ export async function createSession(
   userId: string
 ): Promise<Session> {
   const sessionId = encodeHexLowerCase(sha256(new TextEncoder().encode(token)));
+
   const session: Session = {
     id: sessionId,
     userid: userId,
-    expiresAt: new Date(Date.now() + 1000 * 60 * 60 * 24 * 30),
+    expiresAt: new Date(Date.now() + DAY_IN_MS * 30),
   };
+
   await db.insert(sessions).values(session);
   return session;
 }
@@ -33,15 +38,18 @@ export async function validateSessionToken(
   token: string
 ): Promise<SessionValidationResult> {
   const sessionId = encodeHexLowerCase(sha256(new TextEncoder().encode(token)));
-  const result = await db
+
+  const [result] = await db
     .select({ user: users, session: sessions })
     .from(sessions)
     .innerJoin(users, eq(sessions.userid, users.id))
     .where(eq(sessions.id, sessionId));
-  if (result.length < 1) {
+
+  if (!result) {
     return { session: null, user: null };
   }
-  const { user, session } = result[0];
+  const { user, session } = result;
+
   if (Date.now() >= session.expiresAt.getTime()) {
     await db.delete(sessions).where(eq(sessions.id, session.id));
     return { session: null, user: null };

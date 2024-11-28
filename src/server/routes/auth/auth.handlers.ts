@@ -43,11 +43,11 @@ export const login: AppRouteHandler<UserLoginRoute> = async (c) => {
     );
   }
 
-  const token = generateSessionToken();
+  const sessionToken = generateSessionToken();
 
-  const session = await createSession(token, existingUser.id);
+  await createSession(sessionToken, existingUser.id);
 
-  setSessionTokenCookie(c, session.id);
+  setSessionTokenCookie(c, sessionToken);
 
   return c.json({
     message: "Login Success",
