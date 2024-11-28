@@ -29,8 +29,6 @@ export const getUser = cache(async () => {
   const cookieStore = await cookies();
   const token = cookieStore.get("session")?.value ?? null;
 
-  console.log("stored token");
-
   if (token === null) {
     return { session: null, user: null };
   }
