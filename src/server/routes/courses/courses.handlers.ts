@@ -35,7 +35,7 @@ export const create: AppRouteHandler<CreateCoursesRoute> = async (c) => {
 
   const data = c.req.valid("json");
 
-  const existingCourse = await db.query.courses.findFirst({
+  await db.query.courses.findFirst({
     where: eq(courses.title, data.title),
   });
 

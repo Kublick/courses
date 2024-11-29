@@ -13,6 +13,7 @@ export const list: AppRouteHandler<UserListRoute> = async (c) => {
 
   return c.json(users);
 };
+
 export const create: AppRouteHandler<CreateUserRoute> = async (c) => {
   c.var.logger.info("Creating user");
 

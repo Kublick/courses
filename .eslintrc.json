@@ -2,7 +2,8 @@
   "extends": [
     "next/core-web-vitals",
     "next/typescript",
-    "@tanstack/eslint-plugin-query@4"
+    "plugin:@tanstack/eslint-plugin-query/recommended",
+    "plugin:drizzle/recommended"
   ],
-  "plugins": ["@tanstack/eslint-plugin-query"]
+  "plugins": ["@tanstack/query", "drizzle"]
 }

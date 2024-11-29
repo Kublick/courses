@@ -1,6 +1,35 @@
 import { InferSelectModel, relations } from "drizzle-orm";
-import { pgEnum, pgTable } from "drizzle-orm/pg-core";
+import {
+  boolean,
+  customType,
+  pgEnum,
+  pgTable,
+  text,
+  timestamp,
+  uuid,
+} from "drizzle-orm/pg-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
+import { z } from "zod";
+
+type NumericConfig = {
+  precision?: number;
+  scale?: number;
+};
+
+export const numericCasted = customType<{
+  data: number;
+  driverData: string;
+  config: NumericConfig;
+}>({
+  dataType: (config) => {
+    if (config?.precision && config?.scale) {
+      return `numeric(${config.precision}, ${config.scale})`;
+    }
+    return "numeric";
+  },
+  fromDriver: (value: string) => Number.parseFloat(value), // note: precision loss for very large/small digits so area to refactor if needed
+  toDriver: (value: number) => value.toString(),
+});
 
 export const roleEnums = pgEnum("roles", ["user", "admin", "customer"]);
 
@@ -52,29 +81,32 @@ export const sessions = pgTable("session", (t) => ({
 
 export type Session = InferSelectModel<typeof sessions>;
 
-export const courses = pgTable("courses", (t) => ({
-  id: t.uuid().primaryKey().defaultRandom(),
-  title: t.text().notNull(),
-  description: t.text().notNull(),
-  price: t.numeric().notNull(),
-  is_published: t.boolean().default(false),
-  slug: t.text().notNull().unique(),
-  created_at: t.timestamp("created_at").defaultNow().notNull(),
-  updated_at: t.timestamp("updated_at"),
-}));
+export const courses = pgTable("courses", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  title: text().notNull(),
+  description: text().notNull(),
+  price: numericCasted({ precision: 10, scale: 2 }).notNull(),
+  is_published: boolean().default(false),
+  slug: text().notNull().unique(),
+  created_at: timestamp("created_at").defaultNow().notNull(),
+  updated_at: timestamp("updated_at"),
+});
 
 export type Course = InferSelectModel<typeof courses>;
 
 export const insertCourseSchema = createInsertSchema(courses, {
   title: (schema) =>
-    schema.title.min(3, "El nombre del curso debe tener al menos 3 caracteres"),
+    schema.title.min(3, {
+      message: "El nombre del curso debe tener al menos 3 caracteres",
+    }),
   description: (schema) =>
-    schema.description.min(
-      10,
-      "El descripcion del curso debe tener al menos 10 caracteres"
-    ),
-  price: (schema) =>
-    schema.price.min(0, "El precio del curso debe ser mayor a 0"),
+    schema.description.min(10, {
+      message: "El descripcion del curso debe tener al menos 10 caracteres",
+    }),
+  price: () =>
+    z.coerce
+      .number({ message: "El precio del curso debe ser un numero" })
+      .min(0, { message: "El precio del curso debe ser mayor a 0" }),
 }).omit({
   id: true,
   created_at: true,
@@ -138,7 +170,7 @@ export const lectures = pgTable("lectures", (t) => ({
   updated_at: t.timestamp("updated_at"),
 }));
 
-export const lectureRelations = relations(lectures, ({ one, many }) => ({
+export const lectureRelations = relations(lectures, ({ one }) => ({
   section: one(sections, {
     fields: [lectures.section_id],
     references: [sections.id],

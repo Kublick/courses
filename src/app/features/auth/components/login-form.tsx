@@ -23,7 +23,6 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
 import { useLogin } from "../api/use-login";
-import { redirect } from "next/navigation";
 
 const formSchema = z.object({
   email: z

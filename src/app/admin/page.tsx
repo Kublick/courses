@@ -2,8 +2,6 @@ import { getUser } from "@/server/lib/utils";
 import { redirect } from "next/navigation";
 import React from "react";
 
-import AdminSidebar from "@/features/admin/components/admin-sidebar";
-
 const AdminPage = async () => {
   const { user } = await getUser();
 
@@ -11,7 +9,11 @@ const AdminPage = async () => {
     redirect("/auth/login");
   }
 
-  return <AdminSidebar />;
+  return (
+    <div className="p-6">
+      <p>Selecciona una opcion</p>
+    </div>
+  );
 };
 
 export default AdminPage;
