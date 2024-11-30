@@ -1,9 +1,15 @@
 import { AppRouteHandler } from "@/server/types";
-import { CreateCoursesRoute, ListCoursesRoute } from "./courses.route";
+import {
+  CreateCoursesRoute,
+  GetOneCourseRoute,
+  ListCoursesRoute,
+} from "./courses.route";
 import db from "@/server/db";
-import { eq } from "drizzle-orm";
+
 import { courses } from "@/server/db/schema";
 import * as HttpStatusCodes from "stoker/http-status-codes";
+import * as HttpStatusPhrases from "stoker/http-status-phrases";
+import { eq } from "drizzle-orm";
 
 const generateSlug = async (title: string): Promise<string> => {
   const baseSlug = title
@@ -62,4 +68,26 @@ export const list: AppRouteHandler<ListCoursesRoute> = async (c) => {
   const courses = await db.query.courses.findMany();
 
   return c.json(courses);
+};
+
+export const getOneBySlug: AppRouteHandler<GetOneCourseRoute> = async (c) => {
+  const { slug } = c.req.valid("param");
+
+  c.var.logger.info("Getting One", slug);
+
+  const [course] = await db
+    .select()
+    .from(courses)
+    .where(eq(courses.slug, slug));
+
+  if (!course) {
+    return c.json(
+      {
+        message: HttpStatusPhrases.NOT_FOUND,
+      },
+      HttpStatusCodes.NOT_FOUND
+    );
+  }
+
+  return c.json(course, HttpStatusCodes.OK);
 };

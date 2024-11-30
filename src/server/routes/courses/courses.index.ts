@@ -4,6 +4,7 @@ import * as routes from "./courses.route";
 
 const router = createRouter()
   .openapi(routes.create, handlers.create)
-  .openapi(routes.list, handlers.list);
+  .openapi(routes.list, handlers.list)
+  .openapi(routes.getOneBySlug, handlers.getOneBySlug);
 
 export default router;

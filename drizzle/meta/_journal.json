@@ -36,6 +36,13 @@
       "when": 1732665708365,
       "tag": "0004_robust_smiling_tiger",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1732932493762,
+      "tag": "0005_opposite_synch",
+      "breakpoints": true
     }
   ]
 }
