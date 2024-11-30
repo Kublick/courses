@@ -2,11 +2,7 @@ import { createRoute, z } from "@hono/zod-openapi";
 import { jsonContent, jsonContentRequired } from "stoker/openapi/helpers";
 import * as HttpStatusCodes from "stoker/http-status-codes";
 
-import {
-  createErrorSchema,
-  IdParamsSchema,
-  SlugParamsSchema,
-} from "stoker/openapi/schemas";
+import { createErrorSchema, SlugParamsSchema } from "stoker/openapi/schemas";
 import { insertCourseSchema, selectCourseSchema } from "@/server/db/schema";
 import { notFoundSchema } from "@/server/lib/constants";
 
@@ -47,7 +43,10 @@ export const getOneBySlug = createRoute({
   },
   responses: {
     [HttpStatusCodes.OK]: jsonContent(selectCourseSchema, "The course"),
-    [HttpStatusCodes.NOT_FOUND]: jsonContent(notFoundSchema, "Task not found"),
+    [HttpStatusCodes.NOT_FOUND]: jsonContent(
+      notFoundSchema,
+      "Course not found"
+    ),
   },
 });
 

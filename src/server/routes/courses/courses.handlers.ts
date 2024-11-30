@@ -73,8 +73,6 @@ export const list: AppRouteHandler<ListCoursesRoute> = async (c) => {
 export const getOneBySlug: AppRouteHandler<GetOneCourseRoute> = async (c) => {
   const { slug } = c.req.valid("param");
 
-  c.var.logger.info("Getting One", slug);
-
   const [course] = await db
     .select()
     .from(courses)
