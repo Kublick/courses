@@ -126,6 +126,10 @@ export const selectCourseSchema = createSelectSchema(courses).pick({
   is_published: true,
 });
 
+export const courseRelations = relations(courses, ({ many }) => ({
+  sections: many(sections),
+}));
+
 export const sections = pgTable("sections", (t) => ({
   id: t.uuid().primaryKey().defaultRandom(),
   course_id: t
@@ -135,15 +139,23 @@ export const sections = pgTable("sections", (t) => ({
   title: t.text().notNull(),
   created_at: t.timestamp("created_at").defaultNow().notNull(),
   updated_at: t.timestamp("updated_at"),
+  position: t.integer().default(1),
 }));
 
 export type Section = InferSelectModel<typeof sections>;
 
+export const selectSectionsSchema = createSelectSchema(sections).omit({
+  updated_at: true,
+});
+
 export const insertSectionSchema = createInsertSchema(sections, {
   title: (schema) =>
     schema.title.min(3, "El nombre del curso debe tener al menos 3 caracteres"),
+  course_id: (schema) => schema.course_id.uuid(),
+  position: (schema) => schema.position,
 }).omit({
   id: true,
+
   created_at: true,
   updated_at: true,
 });
@@ -158,25 +170,23 @@ export const sectionRelations = relations(sections, ({ one, many }) => ({
 
 export const lectures = pgTable("lectures", (t) => ({
   id: t.uuid().primaryKey().defaultRandom(),
-  section_id: t
-    .uuid()
-    .notNull()
-    .references(() => sections.id),
+  section_id: t.uuid().references(() => sections.id),
   title: t.text().notNull(),
   description: t.text(),
   content_type: t.text(),
   content_url: t.text(),
   created_at: t.timestamp("created_at").defaultNow().notNull(),
   updated_at: t.timestamp("updated_at"),
+  position: t.integer().default(1),
 }));
 
 export const lectureRelations = relations(lectures, ({ one }) => ({
   section: one(sections, {
     fields: [lectures.section_id],
     references: [sections.id],
+    relationName: "lecture_to_section",
   }),
 }));
-
 export type Lecture = InferSelectModel<typeof lectures>;
 
 export const insertLectureSchema = createInsertSchema(lectures, {
@@ -187,11 +197,12 @@ export const insertLectureSchema = createInsertSchema(lectures, {
       10,
       "El descripcion del curso debe tener al menos 10 caracteres"
     ),
+
   content_type: (schema) =>
     schema.content_type.min(1, "El tipo de contenido es requerido"),
   content_url: (schema) => schema.content_url.url(),
-  section_id: (schema) =>
-    schema.section_id.min(1, "Ingrese a que capitulo pertenece"),
+  section_id: (schema) => schema.section_id.optional(),
+  position: (schema) => schema.position,
 }).omit({
   id: true,
   created_at: true,
@@ -200,10 +211,25 @@ export const insertLectureSchema = createInsertSchema(lectures, {
 
 export const selectLectureSchema = createSelectSchema(lectures).pick({
   id: true,
+  section_id: true,
   title: true,
   description: true,
   content_type: true,
   content_url: true,
-  created_at: true,
-  updated_at: true,
+  position: true,
 });
+
+export const selectCourseSchemaWithLecturesAndSections =
+  selectCourseSchema.extend({
+    sections: selectSectionsSchema
+      .extend({
+        lectures: selectLectureSchema.array(),
+      })
+      .array(),
+  });
+
+export type CourseWithSectionsAndLectures = InferSelectModel<typeof courses> & {
+  sections: (InferSelectModel<typeof sections> & {
+    lectures: InferSelectModel<typeof lectures>[];
+  })[];
+};

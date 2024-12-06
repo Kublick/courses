@@ -3,7 +3,13 @@ import { jsonContent, jsonContentRequired } from "stoker/openapi/helpers";
 import * as HttpStatusCodes from "stoker/http-status-codes";
 
 import { createErrorSchema, SlugParamsSchema } from "stoker/openapi/schemas";
-import { insertCourseSchema, selectCourseSchema } from "@/server/db/schema";
+import {
+  insertCourseSchema,
+  insertSectionSchema,
+  selectCourseSchema,
+  selectCourseSchemaWithLecturesAndSections,
+  selectSectionsSchema,
+} from "@/server/db/schema";
 import { notFoundSchema } from "@/server/lib/constants";
 
 export const list = createRoute({
@@ -42,7 +48,10 @@ export const getOneBySlug = createRoute({
     params: SlugParamsSchema,
   },
   responses: {
-    [HttpStatusCodes.OK]: jsonContent(selectCourseSchema, "The course"),
+    [HttpStatusCodes.OK]: jsonContent(
+      selectCourseSchemaWithLecturesAndSections,
+      "The course with all info"
+    ),
     [HttpStatusCodes.NOT_FOUND]: jsonContent(
       notFoundSchema,
       "Course not found"
@@ -50,6 +59,26 @@ export const getOneBySlug = createRoute({
   },
 });
 
+export const createCourseSection = createRoute({
+  tags: ["courses"],
+  path: "/courses/sections",
+  method: "post",
+  request: {
+    body: jsonContentRequired(insertSectionSchema, "The section to create"),
+  },
+  responses: {
+    [HttpStatusCodes.OK]: jsonContent(
+      selectSectionsSchema,
+      "The created section"
+    ),
+    [HttpStatusCodes.FORBIDDEN]: jsonContent(
+      createErrorSchema(insertSectionSchema),
+      "You dont have permission to create a section"
+    ),
+  },
+});
+
 export type ListCoursesRoute = typeof list;
 export type CreateCoursesRoute = typeof create;
 export type GetOneCourseRoute = typeof getOneBySlug;
+export type CreateCourseSection = typeof createCourseSection;

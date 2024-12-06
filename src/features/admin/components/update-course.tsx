@@ -1,256 +1,26 @@
-// "use client";
-// import { Card, CardContent, CardHeader } from "@/components/ui/card";
-// import { useGetCourse } from "@/features/admin/api/use-get-course";
-// import {
-//   DndContext,
-//   DragEndEvent,
-//   DragOverEvent,
-//   DragOverlay,
-//   DragStartEvent,
-//   PointerSensor,
-//   useSensor,
-//   useSensors,
-// } from "@dnd-kit/core";
-// import { createPortal } from "react-dom";
-// import { Loader2, Plus } from "lucide-react";
-// import { useMemo, useState } from "react";
-// import { arrayMove, SortableContext } from "@dnd-kit/sortable";
-// import SortableLecture from "./sortable-lecture";
-// import SortableSections from "./sortable-sections";
-// import ColumnContainer from "./column-container";
-
-// export type Column = {
-//   id: number;
-//   title: string;
-// };
-
-// export type Task = {
-//   lecture: Lecture;
-//   columnId: string | number;
-// };
-
-// export interface Lecture {
-//   id: number | string;
-//   title: string;
-//   description: string;
-//   content_type: string;
-//   content_url: string;
-//   created_at: Date;
-// }
-
-// export interface Section {
-//   id: number | string;
-//   title: string;
-//   lectures: Lecture[];
-// }
-
-// interface Props {
-//   slug: string;
-// }
-
-// function generateId() {
-//   return Math.floor(Math.random() * 10001);
-// }
-
-// const UpdateCourse = ({ slug }: Props) => {
-//   const { data, isLoading } = useGetCourse(slug);
-
-//   const sensors = useSensors(
-//     useSensor(PointerSensor, {
-//       activationConstraint: {
-//         distance: 100,
-//       },
-//     })
-//   );
-
-//   const [columns, setColumns] = useState<Column[]>([
-//     {
-//       id: generateId(),
-//       title: "Lecciones Disponibles",
-//     },
-//     {
-//       id: generateId(),
-//       title: "Inicio",
-//     },
-//     {
-//       id: generateId(),
-//       title: "Como incrementar tus ganancias",
-//     },
-//     {
-//       id: generateId(),
-//       title: "Los 5 pasos de una venta",
-//     },
-//   ]);
-
-//   const columnsId = useMemo(() => columns.map((col) => col.id), [columns]);
-
-//   const [activeColumn, setActiveColumn] = useState<Column | null>(null);
-
-//   // Initial state with all lectures unassigned
-//   const [tasks, setTasks] = useState<Task[]>([
-//     {
-//       lecture: {
-//         id: "AA",
-//         title: "Introducción",
-//         description: "Descripción del curso",
-//         content_type: "video",
-//         content_url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-//         created_at: new Date(),
-//       },
-//       columnId: columns[0].id,
-//     },
-//     {
-//       lecture: {
-//         id: "BB",
-//         title: "Induccion",
-//         description: "Descripción del curso",
-//         content_type: "video",
-//         content_url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-//         created_at: new Date(),
-//       },
-//       columnId: columns[0].id,
-//     },
-//     {
-//       lecture: {
-//         id: "CC",
-//         title: "La lista de pacientes",
-//         description: "Crece a tus pacientes",
-//         content_type: "video",
-//         content_url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-//         created_at: new Date(),
-//       },
-//       columnId: columns[0].id,
-//     },
-//   ]);
-//   const [activeTask, setActiveTask] = useState<Task | null>(null);
-
-//   if (isLoading) {
-//     return (
-//       <div className="flex items-center justify-center gap-4 h-screen">
-//         <Loader2 className="animate-spin" /> Cargando Datos...
-//       </div>
-//     );
-//   }
-
-//   if (!data) {
-//     return <div>No existe data</div>;
-//   }
-
-//   const onHandleDragStart = (event: DragStartEvent) => {
-//     console.log("start drag", event.active.data.current?.type);
-
-//     if (event.active.data.current?.type === "column") {
-//       setActiveColumn(event.active.data.current.column);
-//       return;
-//     }
-
-//     if (event.active.data.current?.type === "lecture") {
-//       setActiveTask(event.active.data.current.column);
-//       return;
-//     }
-//   };
-
-//   const handleDragEnd = (event: DragEndEvent) => {
-//     const { active, over } = event;
-
-//     if (!over) return;
-
-//     const activeColumnId = active.id;
-//     const overColumnId = over.id;
-
-//     if (activeColumnId === overColumnId) {
-//       return;
-//     }
-
-//     setColumns((columns) => {
-//       const activeColumnIndex = columns.findIndex(
-//         (col) => col.id === activeColumnId
-//       );
-//       const overColumnIndex = columns.findIndex(
-//         (col) => col.id === overColumnId
-//       );
-
-//       return arrayMove(columns, activeColumnIndex, overColumnIndex);
-//     });
-//   };
-
-//   const handleDragOver = (event: DragOverEvent) => {
-//     const { active, over } = event;
-
-//     if (!over) return;
-
-//     const activeColumnId = active.id;
-//     const overColumnId = over.id;
-
-//     if (activeColumnId === overColumnId) {
-//       return;
-//     }
-
-//     setColumns((columns) => {
-//       const activeColumnIndex = columns.findIndex(
-//         (col) => col.id === activeColumnId
-//       );
-//       const overColumnIndex = columns.findIndex(
-//         (col) => col.id === overColumnId
-//       );
-
-//       return arrayMove(columns, activeColumnIndex, overColumnIndex);
-//     });
-//   };
-
-//   return (
-//     <div className="p-6">
-//       <Card className="max-w-sm mb-6">
-//         <CardHeader>{data.title}</CardHeader>
-//         <CardContent>
-//           <p>{data.description}</p>
-//           <p>{data.price}</p>
-//         </CardContent>
-//       </Card>
-
-//       <DndContext
-//         onDragEnd={handleDragEnd}
-//         onDragOver={handleDragOver}
-//         onDragStart={onHandleDragStart}
-//         sensors={sensors}
-//       >
-//         <div className="flex gap-8">
-//           {/* Lecciones column */}
-//           {/* <div className="h-36 bg-teal-100 min-w-64 flex items-center justify-center">
-//             {columns[0].title}
-//           </div> */}
-
-//           {/* Sections column */}
-//           <SortableContext items={columnsId}>
-//             <div className="flex gap-4">
-//               {columns.map((column) => (
-//                 <ColumnContainer
-//                   key={column.id}
-//                   column={column}
-//                   tasks={tasks.filter((task) => task.columnId === column.id)}
-//                 />
-//               ))}
-//             </div>
-//           </SortableContext>
-//         </div>
-//         {/* {createPortal(
-//           <DragOverlay>
-//             {activeColumn && (
-//               <ColumnContainer column={activeColumn} tasks={[]} />
-//             )}
-//           </DragOverlay>,
-//           document.body
-//         )} */}
-//       </DndContext>
-//     </div>
-//   );
-// };
-
-// export default UpdateCourse;
 "use client";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useGetCourse } from "../api/use-get-course";
-import { Loader2 } from "lucide-react";
+import { Loader2, Plus, Video } from "lucide-react";
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { useCreateCourseSection } from "../api/use-create-course-section";
 
 interface Props {
   slug: string;
@@ -258,6 +28,24 @@ interface Props {
 
 const UpdateCourse = ({ slug }: Props) => {
   const { data, isLoading } = useGetCourse(slug);
+  const [columns, setColumns] = useState(data?.sections || []);
+
+  useEffect(() => {
+    if (data?.sections) {
+      const sortedSections = [...data.sections].sort(
+        (a, b) => (a.position || 0) - (b.position || 0)
+      );
+
+      const sectionsWithSortedLectures = sortedSections.map((section) => ({
+        ...section,
+        lectures: [...section.lectures].sort(
+          (a, b) => (a.position || 0) - (b.position || 0)
+        ),
+      }));
+
+      setColumns(sectionsWithSortedLectures);
+    }
+  }, [data]);
 
   if (isLoading) {
     return (
@@ -267,13 +55,122 @@ const UpdateCourse = ({ slug }: Props) => {
     );
   }
 
-  if (!data) {
+  if (!data || !columns) {
     return <div>No existen curso</div>;
   }
 
-  console.log("data", data);
-
-  return <div>UpdateCourse</div>;
+  return (
+    <div>
+      <div className="p-4 grid ">
+        <Card>
+          <CardHeader>
+            <h1 className="text-xl font-semibold">Curso:{data.title}</h1>
+          </CardHeader>
+          <CardContent>
+            <p> Descripcion {data.description}</p>
+          </CardContent>
+          <CardFooter className="flex justify-end">
+            <NewSection id={data.id} columns={columns.length} />
+          </CardFooter>
+        </Card>
+      </div>
+      <div className="p-4 space-y-6">
+        {columns.map((s) => (
+          <div key={s.id}>
+            <Card>
+              <CardHeader>
+                <div className="flex justify-between">
+                  <h2 className="text-lg font-semibold mb-4">
+                    Seccion: {s.title}
+                  </h2>
+                  <Button>
+                    <Plus className="h-6 w-6" /> Agregar Leccion
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <CardContent>
+                  {s.lectures.map((l) => (
+                    <Card key={l.id}>
+                      <CardHeader>
+                        <p>Nombre: {l.title}</p>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="flex gap-4 justify-between">
+                          <p>Descripcion: {l.description}</p>
+                          <p className="flex gap-2">
+                            Tipo:
+                            {l.content_type === "video" ? (
+                              <Video className="h-4 w-4" />
+                            ) : (
+                              "PDF"
+                            )}
+                          </p>
+                        </div>
+                        Archivo: <p>{l.content_url}</p>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </CardContent>
+              </CardContent>
+            </Card>
+          </div>
+        ))}
+      </div>
+      <pre>{JSON.stringify(columns, null, 2)}</pre>
+    </div>
+  );
 };
 
 export default UpdateCourse;
+
+const NewSection = ({ id, columns }: { id: string; columns: number }) => {
+  const createCourseSection = useCreateCourseSection();
+  const [title, setTitle] = useState("");
+  const [open, setOpen] = useState(false);
+
+  function submit() {
+    if (title.length === 0) {
+      return;
+    }
+
+    createCourseSection.mutate({
+      title,
+      course_id: id,
+      position: columns + 1,
+    });
+
+    setOpen(false);
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button className="mt-6" variant="secondary">
+          <Plus className="h-6 w-6" /> Nueva Seccion
+        </Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Crear Nueva Sección</DialogTitle>
+          <DialogDescription asChild>
+            <div className="flex items-center space-x-2 pt-4">
+              <div className="grid flex-1 gap-2">
+                <Input
+                  id="title"
+                  defaultValue="Titulo"
+                  onChange={(e) => setTitle(e.target.value)}
+                />
+              </div>
+            </div>
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button type="button" onClick={submit}>
+            Registrar
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+};

@@ -1,14 +1,15 @@
 import { AppRouteHandler } from "@/server/types";
 import {
+  CreateCourseSection,
   CreateCoursesRoute,
   GetOneCourseRoute,
   ListCoursesRoute,
 } from "./courses.route";
 import db from "@/server/db";
 
-import { courses } from "@/server/db/schema";
+import { courses, sections } from "@/server/db/schema";
 import * as HttpStatusCodes from "stoker/http-status-codes";
-import * as HttpStatusPhrases from "stoker/http-status-phrases";
+
 import { eq } from "drizzle-orm";
 
 const generateSlug = async (title: string): Promise<string> => {
@@ -71,21 +72,41 @@ export const list: AppRouteHandler<ListCoursesRoute> = async (c) => {
 };
 
 export const getOneBySlug: AppRouteHandler<GetOneCourseRoute> = async (c) => {
-  const { slug } = c.req.valid("param");
+  const slug = c.req.param("slug");
 
-  const [course] = await db
-    .select()
-    .from(courses)
-    .where(eq(courses.slug, slug));
-
-  if (!course) {
-    return c.json(
-      {
-        message: HttpStatusPhrases.NOT_FOUND,
+  const courseData = await db.query.courses.findFirst({
+    where: eq(courses.slug, slug),
+    with: {
+      sections: {
+        with: {
+          lectures: true,
+        },
       },
-      HttpStatusCodes.NOT_FOUND
-    );
+    },
+  });
+
+  if (!courseData) {
+    return c.json({ message: "Course not found" }, HttpStatusCodes.NOT_FOUND);
   }
 
-  return c.json(course, HttpStatusCodes.OK);
+  return c.json(courseData, HttpStatusCodes.OK);
+};
+
+export const createCourseSection: AppRouteHandler<CreateCourseSection> = async (
+  c
+) => {
+  c.var.logger.info("Creating section");
+
+  const { title, course_id, position } = c.req.valid("json");
+
+  const [createSection] = await db
+    .insert(sections)
+    .values({
+      title,
+      course_id,
+      position,
+    })
+    .returning();
+
+  return c.json(createSection, HttpStatusCodes.OK);
 };

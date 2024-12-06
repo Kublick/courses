@@ -43,7 +43,7 @@
     "eslint-plugin-drizzle": "^0.2.3",
     "hono": "^4.6.12",
     "hono-pino": "^0.7.0",
-    "lucide-react": "^0.462.0",
+    "lucide-react": "^0.465.0",
     "next": "15.0.3",
     "next-themes": "^0.4.3",
     "pino": "^9.5.0",
