@@ -1,24 +1,26 @@
 import { client } from "@/server/client";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { insertSectionSchema } from "../../../server/db/schema";
+import { insertLectureSchema } from "../../../server/db/schema";
 import { z } from "zod";
 
-export const useCreateCourseSection = () => {
+export const useCreateLecture = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (json: z.infer<typeof insertSectionSchema>) => {
-      const { title, course_id, position } = json;
+    mutationFn: async (json: z.infer<typeof insertLectureSchema>) => {
+      const { title, section_id, position, content_url, content_type } = json;
 
-      const response = await client.api.courses.sections.$post({
+      const response = await client.api.lectures.$post({
         json: {
           title,
-          course_id,
+          section_id,
           position,
+          content_url,
+          content_type,
         },
       });
 
       if (!response.ok) {
-        throw new Error("No se pudo crear el curso");
+        throw new Error("No se pudo crear la sección");
       }
 
       return response.json();

@@ -201,7 +201,7 @@ export const insertLectureSchema = createInsertSchema(lectures, {
   content_type: (schema) =>
     schema.content_type.min(1, "El tipo de contenido es requerido"),
   content_url: (schema) => schema.content_url.url(),
-  section_id: (schema) => schema.section_id.optional(),
+  section_id: (schema) => schema.section_id,
   position: (schema) => schema.position,
 }).omit({
   id: true,

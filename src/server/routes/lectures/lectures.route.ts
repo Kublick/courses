@@ -3,7 +3,7 @@ import { jsonContent, jsonContentRequired } from "stoker/openapi/helpers";
 import * as HttpStatusCodes from "stoker/http-status-codes";
 
 import { insertLectureSchema, selectLectureSchema } from "@/server/db/schema";
-import { createErrorSchema } from "stoker/openapi/schemas";
+import { createErrorSchema, IdUUIDParamsSchema } from "stoker/openapi/schemas";
 
 export const list = createRoute({
   tags: ["lectures"],
@@ -44,5 +44,29 @@ export const create = createRoute({
   },
 });
 
+export const deleteOneById = createRoute({
+  tags: ["lectures"],
+  path: "/lectures/{id}",
+  method: "delete",
+  request: {
+    params: IdUUIDParamsSchema,
+  },
+  responses: {
+    [HttpStatusCodes.OK]: jsonContent(
+      z.object({
+        message: z.string(),
+      }),
+      "The lecture was deleted"
+    ),
+    [HttpStatusCodes.NOT_FOUND]: jsonContent(
+      z.object({
+        message: z.string(),
+      }),
+      "The lecture was not found"
+    ),
+  },
+});
+
 export type LectureListRoute = typeof list;
 export type CreateLectureRoute = typeof create;
+export type DeleteLectureByIdRoute = typeof deleteOneById;
