@@ -2,7 +2,11 @@ import { createRoute, z } from "@hono/zod-openapi";
 import { jsonContent, jsonContentRequired } from "stoker/openapi/helpers";
 import * as HttpStatusCodes from "stoker/http-status-codes";
 
-import { insertLectureSchema, selectLectureSchema } from "@/server/db/schema";
+import {
+  insertLectureSchema,
+  selectLectureSchema,
+  updateLectureSchema,
+} from "@/server/db/schema";
 import { createErrorSchema, IdUUIDParamsSchema } from "stoker/openapi/schemas";
 
 export const list = createRoute({
@@ -17,12 +21,53 @@ export const list = createRoute({
   },
 });
 
+// export const create = createRoute({
+//   tags: ["lectures"],
+//   path: "/lectures",
+//   method: "post",
+//   request: {
+//     body: jsonContentRequired(insertLectureSchema, "The lecture to create"),
+//   },
+//   responses: {
+//     [HttpStatusCodes.OK]: jsonContent(
+//       z.object({
+//         id: z.string(),
+//       }),
+//       "The created lecture"
+//     ),
+//     [HttpStatusCodes.UNPROCESSABLE_ENTITY]: jsonContent(
+//       createErrorSchema(insertLectureSchema),
+//       "There is an error creating the lecture"
+//     ),
+//     [HttpStatusCodes.CONFLICT]: jsonContent(
+//       z.object({
+//         message: z.string(),
+//       }),
+//       "The lecture already exists"
+//     ),
+//   },
+// });
+
 export const create = createRoute({
   tags: ["lectures"],
   path: "/lectures",
   method: "post",
   request: {
-    body: jsonContentRequired(insertLectureSchema, "The lecture to create"),
+    body: {
+      content: {
+        "multipart/form-data": {
+          schema: z.object({
+            title: z.string(),
+            description: z.string(),
+            file: z.custom<File>((value) => value instanceof File, {
+              message: "Expected a valid File instance",
+            }),
+            section_id: z.string(),
+            position: z.string(),
+          }),
+        },
+      },
+    },
   },
   responses: {
     [HttpStatusCodes.OK]: jsonContent(
@@ -40,6 +85,39 @@ export const create = createRoute({
         message: z.string(),
       }),
       "The lecture already exists"
+    ),
+  },
+});
+
+export const uploadVideo = createRoute({
+  tags: ["lectures"],
+  path: "/lectures/upload",
+  method: "post",
+  request: {
+    body: {
+      content: {
+        "multipart/form-data": {
+          schema: z.object({
+            file: z.custom<File>((value) => value instanceof File, {
+              message: "Expected a valid File instance",
+            }),
+          }),
+        },
+      },
+    },
+  },
+  responses: {
+    [HttpStatusCodes.OK]: jsonContent(
+      z.object({
+        id: z.string(),
+      }),
+      "The created video"
+    ),
+    [HttpStatusCodes.UNPROCESSABLE_ENTITY]: jsonContent(
+      z.object({
+        message: z.string(),
+      }),
+      "Validation error"
     ),
   },
 });
@@ -67,6 +145,32 @@ export const deleteOneById = createRoute({
   },
 });
 
+export const updateOneById = createRoute({
+  tags: ["lectures"],
+  path: "/lectures/{id}",
+  method: "put",
+  request: {
+    params: IdUUIDParamsSchema,
+    body: jsonContentRequired(updateLectureSchema, "The lecture to update"),
+  },
+  responses: {
+    [HttpStatusCodes.OK]: jsonContent(
+      z.object({
+        message: z.string(),
+      }),
+      "The lecture was updated"
+    ),
+    [HttpStatusCodes.NOT_FOUND]: jsonContent(
+      z.object({
+        message: z.string(),
+      }),
+      "The lecture was not found"
+    ),
+  },
+});
+
 export type LectureListRoute = typeof list;
 export type CreateLectureRoute = typeof create;
 export type DeleteLectureByIdRoute = typeof deleteOneById;
+export type UpdateLectureByIdRoute = typeof updateOneById;
+export type UploadLectureVideo = typeof uploadVideo;

@@ -7,7 +7,6 @@ if (!process.env.DATABASE_URL) {
 
 const db = drizzle({
   connection: process.env.DATABASE_URL,
-  casing: "snake_case",
   schema: schema,
 });
 

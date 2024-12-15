@@ -1,5 +1,5 @@
 "use client";
-import React from "react";
+import React, { useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -18,16 +18,16 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Button } from "@/components/ui/button";
-import { ChevronDown, Plus } from "lucide-react";
+import { Edit2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { insertLectureSchema } from "@/server/db/schema";
 import { z } from "zod";
 import { Textarea } from "@/components/ui/textarea";
-import { useCreateLecture } from "../api/use-create-lecture";
-import { getMuxUrl } from "@/server/lib/mux";
+import { useUpdateLecture } from "../api/use-update-lecture";
 
-const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
+const MAX_FILE_SIZE = 50 * 1024 * 1024; // 10MB
 const ACCEPTED_VIDEO_TYPES = [
   "video/mp4",
   "video/mpeg",
@@ -39,78 +39,81 @@ const ACCEPTED_VIDEO_TYPES = [
 export const lectureFormSchema = z.object({
   title: z.string().min(1, { message: "El título es obligatorio" }),
   description: z.string().optional(),
+  section_id: z.string(),
+  position: z.number(),
   file: z
-    .instanceof(File)
-    .refine((file) => file !== undefined, {
-      message: "Por favor, selecciona un archivo de video",
-    })
-    .refine((file) => file.size <= MAX_FILE_SIZE, {
-      message: "El archivo debe ser de 50MB o menos",
-    })
-    .refine((file) => ACCEPTED_VIDEO_TYPES.includes(file.type), {
-      message:
-        "Por favor, sube un archivo de video válido (mp4, mpeg, mov, avi, webm)",
-    }),
+    .union([z.instanceof(File), z.null(), z.undefined()])
+    .refine(
+      (file) => {
+        return (
+          file === null || file === undefined || file.size <= MAX_FILE_SIZE
+        );
+      },
+      {
+        message: "El archivo debe ser de 50MB o menos",
+      }
+    )
+    .refine(
+      (file) => {
+        // Ensure the file type is valid for videos
+        return (
+          file === null ||
+          file === undefined ||
+          ACCEPTED_VIDEO_TYPES.includes(file.type)
+        );
+      },
+      {
+        message:
+          "Por favor, sube un archivo de video válido (mp4, mpeg, mov, avi, webm)",
+      }
+    ),
 });
 
 interface Props {
+  title: string;
+  description: string;
   section_id: string;
-  lecturesLength: number;
+  position: number;
+  id: string;
 }
 
-const NewLecture = ({ section_id, lecturesLength }: Props) => {
+const UpdateLecture = ({
+  id,
+  title,
+  description,
+  section_id,
+  position,
+}: Props) => {
   const [open, setOpen] = React.useState(false);
-  const [isUploading, setIsUploading] = React.useState(false);
 
   const form = useForm<z.infer<typeof lectureFormSchema>>({
     resolver: zodResolver(lectureFormSchema),
     defaultValues: {
-      title: "",
-      description: "",
+      title,
+      description,
+      section_id,
+      position,
     },
   });
 
-  const createLecture = useCreateLecture();
+  useEffect(() => {
+    form.reset({ title, description, section_id, position });
+  }, [title, description, section_id, position, form]);
 
-  async function onSubmit(values: z.infer<typeof lectureFormSchema>) {
-    setIsUploading(true);
+  const updateLecture = useUpdateLecture();
 
-    try {
-      const position = lecturesLength + 1;
-
-      const uploadAsset = await getMuxUrl();
-      console.log("🚀 ~ onSubmit ~ uploadAsset:", uploadAsset);
-
-      const uploadResponse = await fetch(uploadAsset.url, {
-        method: "PUT",
-        body: values.file,
-        headers: {
-          "Content-Type": values.file.type,
-        },
-      });
-
-      if (!uploadResponse.ok) {
-        throw new Error("Video upload to Mux failed");
-      }
-
-      // Create lecture with Mux video URL
-      createLecture.mutate({
-        title: values.title,
-        description: values.description ?? "",
-        section_id: section_id,
-        position: position,
-        file: values.file,
-      });
-
-      // Reset form and close dialog
-      form.reset();
-      setOpen(false);
-    } catch (error) {
-      console.error("Lecture creation failed:", error);
-      // Handle error (maybe show a toast or error message)
-    } finally {
-      setIsUploading(false);
-    }
+  function onSubmit(values: z.infer<typeof insertLectureSchema>) {
+    updateLecture.mutate({
+      id,
+      title: values.title,
+      description: values.description,
+      section_id: values.section_id,
+      position: values.position,
+      content_type: "video",
+      content_url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+    });
+    form.reset();
+    setOpen(false);
   }
 
   return (
@@ -118,8 +121,8 @@ const NewLecture = ({ section_id, lecturesLength }: Props) => {
       <form onSubmit={form.handleSubmit(onSubmit)}>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
-            <Button className="mt-6" size="sm">
-              Añadir <ChevronDown className="h-6 w-6" />
+            <Button variant="ghost">
+              <Edit2 size="icon" />
             </Button>
           </DialogTrigger>
           <DialogContent>
@@ -180,7 +183,6 @@ const NewLecture = ({ section_id, lecturesLength }: Props) => {
             <DialogFooter>
               <Button
                 type="submit"
-                disabled={isUploading}
                 onClick={async () => {
                   await form.trigger();
                   if (form.formState.isValid) {
@@ -188,7 +190,7 @@ const NewLecture = ({ section_id, lecturesLength }: Props) => {
                   }
                 }}
               >
-                {isUploading ? "Subiendo..." : "Registrar"}
+                Registrar
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -198,4 +200,4 @@ const NewLecture = ({ section_id, lecturesLength }: Props) => {
   );
 };
 
-export default NewLecture;
+export default UpdateLecture;

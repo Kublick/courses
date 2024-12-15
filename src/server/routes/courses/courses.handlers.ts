@@ -79,11 +79,17 @@ export const getOneBySlug: AppRouteHandler<GetOneCourseRoute> = async (c) => {
     with: {
       sections: {
         with: {
-          lectures: true,
+          lectures: {
+            with: {
+              video: true,
+            },
+          },
         },
       },
     },
   });
+
+  console.log("🚀 ~ courseData:", courseData);
 
   if (!courseData) {
     return c.json({ message: "Course not found" }, HttpStatusCodes.NOT_FOUND);

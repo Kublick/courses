@@ -1,3 +1,4 @@
+import { z } from "@hono/zod-openapi";
 import { InferSelectModel, relations } from "drizzle-orm";
 import {
   boolean,
@@ -8,8 +9,11 @@ import {
   timestamp,
   uuid,
 } from "drizzle-orm/pg-core";
-import { createInsertSchema, createSelectSchema } from "drizzle-zod";
-import { z } from "zod";
+import {
+  createSchemaFactory,
+  createSelectSchema,
+  createUpdateSchema,
+} from "drizzle-zod";
 
 type NumericConfig = {
   precision?: number;
@@ -27,9 +31,11 @@ export const numericCasted = customType<{
     }
     return "numeric";
   },
-  fromDriver: (value: string) => Number.parseFloat(value), // note: precision loss for very large/small digits so area to refactor if needed
+  fromDriver: (value: string) => Number.parseFloat(value),
   toDriver: (value: number) => value.toString(),
 });
+
+const { createInsertSchema } = createSchemaFactory({ zodInstance: z });
 
 export const roleEnums = pgEnum("roles", ["user", "admin", "customer"]);
 
@@ -50,9 +56,8 @@ export const users = pgTable("users", (t) => ({
 export type User = InferSelectModel<typeof users>;
 
 export const insertUserSchema = createInsertSchema(users, {
-  username: (schema) =>
-    schema.username.min(3, "El Usurio debe tener al menos 3 caracteres"),
-  email: (schema) => schema.email.email("El email ingresado no es valido"),
+  username: (schema) => schema.openapi({ minLength: 3 }),
+  email: (schema) => schema.email("El email ingresado no es valido"),
 }).pick({
   username: true,
   email: true,
@@ -96,11 +101,11 @@ export type Course = InferSelectModel<typeof courses>;
 
 export const insertCourseSchema = createInsertSchema(courses, {
   title: (schema) =>
-    schema.title.min(3, {
+    schema.openapi({ minLength: 3 }).min(3, {
       message: "El nombre del curso debe tener al menos 3 caracteres",
     }),
   description: (schema) =>
-    schema.description.min(10, {
+    schema.openapi({ minLength: 10 }).min(10, {
       message: "El descripcion del curso debe tener al menos 10 caracteres",
     }),
   price: () =>
@@ -136,6 +141,7 @@ export const sections = pgTable("sections", (t) => ({
     .uuid()
     .notNull()
     .references(() => courses.id),
+  is_published: t.boolean().default(false),
   title: t.text().notNull(),
   created_at: t.timestamp("created_at").defaultNow().notNull(),
   updated_at: t.timestamp("updated_at"),
@@ -150,12 +156,23 @@ export const selectSectionsSchema = createSelectSchema(sections).omit({
 
 export const insertSectionSchema = createInsertSchema(sections, {
   title: (schema) =>
-    schema.title.min(3, "El nombre del curso debe tener al menos 3 caracteres"),
-  course_id: (schema) => schema.course_id.uuid(),
-  position: (schema) => schema.position,
+    schema
+      .openapi({ minLength: 3 })
+      .min(3, "El nombre del curso debe tener al menos 3 caracteres"),
+  course_id: (schema) =>
+    schema
+      .openapi({
+        type: "string",
+        format: "uuid",
+      })
+      .uuid(),
+  position: (schema) =>
+    schema.openapi({
+      type: "number",
+      minimum: 1,
+    }),
 }).omit({
   id: true,
-
   created_at: true,
   updated_at: true,
 });
@@ -178,36 +195,52 @@ export const lectures = pgTable("lectures", (t) => ({
   created_at: t.timestamp("created_at").defaultNow().notNull(),
   updated_at: t.timestamp("updated_at"),
   position: t.integer().default(1),
+  video: t.uuid().references(() => videos.id),
+  is_published: t.boolean().default(false),
 }));
 
 export const lectureRelations = relations(lectures, ({ one }) => ({
   section: one(sections, {
     fields: [lectures.section_id],
     references: [sections.id],
-    relationName: "lecture_to_section",
+  }),
+  video: one(videos, {
+    fields: [lectures.video],
+    references: [videos.id],
   }),
 }));
+
 export type Lecture = InferSelectModel<typeof lectures>;
 
 export const insertLectureSchema = createInsertSchema(lectures, {
   title: (schema) =>
-    schema.title.min(3, "El nombre del curso debe tener al menos 3 caracteres"),
+    schema
+      .openapi({ minLength: 3 })
+      .min(3, "El nombre del curso debe tener al menos 3 caracteres"),
   description: (schema) =>
-    schema.description.min(
-      10,
-      "El descripcion del curso debe tener al menos 10 caracteres"
-    ),
+    schema
+      .openapi({ minLength: 10 })
+      .min(10, "El descripcion del curso debe tener al menos 10 caracteres"),
 
   content_type: (schema) =>
-    schema.content_type.min(1, "El tipo de contenido es requerido"),
-  content_url: (schema) => schema.content_url.url(),
-  section_id: (schema) => schema.section_id,
-  position: (schema) => schema.position,
-}).omit({
-  id: true,
-  created_at: true,
-  updated_at: true,
-});
+    schema
+      .openapi({ minLength: 1 })
+      .min(1, "El tipo de contenido es requerido"),
+  content_url: (schema) => schema.url(),
+  section_id: (schema) => schema.uuid(),
+  video: (schema) => schema.uuid().optional(),
+  position: (schema) => schema.openapi({ minimum: 1 }),
+})
+  .omit({
+    id: true,
+    created_at: true,
+    updated_at: true,
+  })
+  .extend({
+    file: z.custom<File>((value) => value instanceof File, {
+      message: "Expected a valid File instance",
+    }),
+  });
 
 export const selectLectureSchema = createSelectSchema(lectures).pick({
   id: true,
@@ -217,6 +250,10 @@ export const selectLectureSchema = createSelectSchema(lectures).pick({
   content_type: true,
   content_url: true,
   position: true,
+});
+
+export const updateLectureSchema = createUpdateSchema(lectures).omit({
+  id: true,
 });
 
 export const selectCourseSchemaWithLecturesAndSections =
@@ -233,3 +270,38 @@ export type CourseWithSectionsAndLectures = InferSelectModel<typeof courses> & {
     lectures: InferSelectModel<typeof lectures>[];
   })[];
 };
+
+export const videos = pgTable("videos", (t) => ({
+  id: t.uuid().primaryKey().defaultRandom(),
+  status: t.text(),
+  asset_id: t.text(),
+  playback_id: t.text(),
+  passthrough: t.text(),
+  duration: t.doublePrecision(),
+  upload_id: t.text(),
+  created_at: t.timestamp("created_at").defaultNow().notNull(),
+  updated_at: t.timestamp("updated_at"),
+}));
+
+export const insertVideoSchema = createInsertSchema(videos, {
+  status: (schema) => schema.openapi({ minLength: 1 }),
+  asset_id: (schema) => schema.optional(),
+  playback_id: (schema) => schema.optional(),
+  passthrough: (schema) => schema.openapi({ minLength: 1 }),
+  duration: (schema) => schema.optional(),
+  upload_id: (schema) => schema.optional(),
+}).omit({
+  id: true,
+  created_at: true,
+  updated_at: true,
+});
+
+export const selectVideoSchema = createSelectSchema(videos).pick({
+  id: true,
+  status: true,
+  asset_id: true,
+  playback_id: true,
+  passthrough: true,
+  duration: true,
+  upload_id: true,
+});

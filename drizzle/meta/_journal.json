@@ -64,6 +64,20 @@
       "when": 1733524914889,
       "tag": "0008_swift_microbe",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1734202825496,
+      "tag": "0009_condemned_master_chief",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1734217358128,
+      "tag": "0010_white_joseph",
+      "breakpoints": true
     }
   ]
 }

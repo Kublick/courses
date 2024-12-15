@@ -1,7 +1,7 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import { useGetCourse } from "../api/use-get-course";
-import { Edit2, Loader2, Plus, Video, X } from "lucide-react";
+import { Loader2, Plus, Video, X } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -23,6 +23,7 @@ import { Input } from "@/components/ui/input";
 import { useCreateCourseSection } from "../api/use-create-course-section";
 import NewLecture from "./new-lecture";
 import { useDeleteLecture } from "../api/use-delete-lecture";
+// import UpdateLecture from "./update-lecture";
 
 interface Props {
   slug: string;
@@ -99,9 +100,13 @@ const UpdateCourse = ({ slug }: Props) => {
                       <div className="flex justify-between items-center">
                         <p>Nombre: {l.title}</p>
                         <div className="flex gap-2 items-center">
-                          <Button variant="ghost">
-                            <Edit2 size="icon" />
-                          </Button>
+                          {/* <UpdateLecture
+                            id={l.id}
+                            title={l.title}
+                            description={l.description ?? ""}
+                            section_id={s.id}
+                            position={l.position ?? 0}
+                          /> */}
                           <HandleDeleteLecture lectureId={l.id} />
                         </div>
                       </div>
@@ -111,14 +116,20 @@ const UpdateCourse = ({ slug }: Props) => {
                         <p>Descripcion: {l.description}</p>
                         <p className="flex gap-2 items-center">
                           Tipo:
-                          {l.content_type === "video" ? (
-                            <Video className="h-4 w-4" />
-                          ) : (
+                          {l.content_type === "PDF" ? (
                             "PDF"
+                          ) : (
+                            <Video className="h-4 w-4" />
                           )}
                         </p>
                       </div>
-                      Archivo: <p>{l.content_url}</p>
+
+                      <p>Archivo:</p>
+                      {l.content_url && (
+                        <video width="120" height="120">
+                          <source src={l.content_url} type="video/mp4" />
+                        </video>
+                      )}
                     </CardContent>
                   </Card>
                 ))}
