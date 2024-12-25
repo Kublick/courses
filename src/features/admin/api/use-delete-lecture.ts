@@ -5,6 +5,7 @@ export const useDeleteLecture = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (param: { id: string }) => {
+      console.log("Param:", param);
       const response = await client.api.lectures[":id"].$delete({
         param: {
           id: param.id,

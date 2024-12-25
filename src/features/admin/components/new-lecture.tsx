@@ -18,7 +18,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Button } from "@/components/ui/button";
-import { ChevronDown, Plus } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -79,7 +79,6 @@ const NewLecture = ({ section_id, lecturesLength }: Props) => {
       const position = lecturesLength + 1;
 
       const uploadAsset = await getMuxUrl();
-      console.log("🚀 ~ onSubmit ~ uploadAsset:", uploadAsset);
 
       const uploadResponse = await fetch(uploadAsset.url, {
         method: "PUT",

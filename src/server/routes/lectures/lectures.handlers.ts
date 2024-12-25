@@ -62,7 +62,7 @@ export const create: AppRouteHandler<CreateLectureRoute> = async (c) => {
         section_id,
         content_type: file.type,
         position: Number(position),
-        content_url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+
         video: videinsert.id,
       })
       .returning();
@@ -118,14 +118,8 @@ export const updateOneById: AppRouteHandler<UpdateLectureByIdRoute> = async (
 ) => {
   c.var.logger.info("Updating lecture");
 
-  const {
-    title,
-    description,
-    content_type,
-    content_url,
-    section_id,
-    position,
-  } = c.req.valid("json");
+  const { title, description, content_type, section_id, position } =
+    c.req.valid("json");
 
   const lecture = await db
     .update(lectures)
@@ -133,7 +127,6 @@ export const updateOneById: AppRouteHandler<UpdateLectureByIdRoute> = async (
       title,
       description,
       content_type,
-      content_url,
       section_id,
       position,
     })

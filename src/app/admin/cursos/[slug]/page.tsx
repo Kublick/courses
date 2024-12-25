@@ -1,12 +1,14 @@
-import UpdateCourse from "@/features/admin/components/update-course";
+import Course from "@/features/admin/components/course";
 import React from "react";
 
-const CoursesById = async ({ params }: { params: { slug: string } }) => {
+type Params = Promise<{ slug: string }>;
+
+const CoursesById = async ({ params }: { params: Params }) => {
   const { slug } = await params;
 
   return (
     <div>
-      <UpdateCourse slug={slug} />
+      <Course slug={slug} />
     </div>
   );
 };

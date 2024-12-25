@@ -69,14 +69,15 @@ async function handleAssetCreated(
   }
 
   if (video.status !== "ready") {
-    await db.update(videos).set({
-      status: status,
-      asset_id: id,
-      playback_id: data.playback_ids?.[0]?.id,
-    });
+    await db
+      .update(videos)
+      .set({
+        status: status,
+        asset_id: id,
+        playback_id: data.playback_ids?.[0]?.id,
+      })
+      .where(eq(videos.id, video.id));
   }
-
-  console.log("Asset created:", data);
 }
 
 async function handleAssetReady(
@@ -87,7 +88,6 @@ async function handleAssetReady(
   if (!passthrough) {
     return;
   }
-  console.log("Defining ", status, passthrough, duration);
 
   try {
     const video = await db.query.videos.findFirst({
@@ -108,8 +108,6 @@ async function handleAssetReady(
   } catch (error) {
     console.error("Error handling asset ready:", error);
   }
-
-  console.log("Asset is ready:", data);
 }
 
 async function handleLiveStreamStarted(

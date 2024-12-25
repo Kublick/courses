@@ -1,6 +1,5 @@
 import { client } from "@/server/client";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { z } from "zod";
 
 export const useCreateLecture = () => {
   const queryClient = useQueryClient();
