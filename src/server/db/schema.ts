@@ -15,6 +15,7 @@ import {
   createUpdateSchema,
 } from "drizzle-zod";
 
+// Define numeric type
 type NumericConfig = {
   precision?: number;
   scale?: number;
@@ -37,6 +38,7 @@ export const numericCasted = customType<{
 
 const { createInsertSchema } = createSchemaFactory({ zodInstance: z });
 
+// Users
 export const roleEnums = pgEnum("roles", ["user", "admin", "customer"]);
 
 export const users = pgTable("users", (t) => ({
@@ -86,6 +88,7 @@ export const sessions = pgTable("session", (t) => ({
 
 export type Session = InferSelectModel<typeof sessions>;
 
+// Courses
 export const courses = pgTable("courses", {
   id: uuid("id").primaryKey().defaultRandom(),
   title: text().notNull(),
@@ -177,37 +180,17 @@ export const insertSectionSchema = createInsertSchema(sections, {
   updated_at: true,
 });
 
-export const sectionRelations = relations(sections, ({ one, many }) => ({
-  course: one(courses, {
-    fields: [sections.course_id],
-    references: [courses.id],
-  }),
-  lectures: many(lectures),
-}));
-
 export const lectures = pgTable("lectures", (t) => ({
   id: t.uuid().primaryKey().defaultRandom(),
   section_id: t.uuid().references(() => sections.id),
   title: t.text().notNull(),
   description: t.text(),
   content_type: t.text(),
-  content_url: t.text(),
   created_at: t.timestamp("created_at").defaultNow().notNull(),
   updated_at: t.timestamp("updated_at"),
   position: t.integer().default(1),
   video: t.uuid().references(() => videos.id),
   is_published: t.boolean().default(false),
-}));
-
-export const lectureRelations = relations(lectures, ({ one }) => ({
-  section: one(sections, {
-    fields: [lectures.section_id],
-    references: [sections.id],
-  }),
-  video: one(videos, {
-    fields: [lectures.video],
-    references: [videos.id],
-  }),
 }));
 
 export type Lecture = InferSelectModel<typeof lectures>;
@@ -226,7 +209,6 @@ export const insertLectureSchema = createInsertSchema(lectures, {
     schema
       .openapi({ minLength: 1 })
       .min(1, "El tipo de contenido es requerido"),
-  content_url: (schema) => schema.url(),
   section_id: (schema) => schema.uuid(),
   video: (schema) => schema.uuid().optional(),
   position: (schema) => schema.openapi({ minimum: 1 }),
@@ -248,27 +230,16 @@ export const selectLectureSchema = createSelectSchema(lectures).pick({
   title: true,
   description: true,
   content_type: true,
-  content_url: true,
   position: true,
+  video: true,
 });
 
 export const updateLectureSchema = createUpdateSchema(lectures).omit({
   id: true,
 });
 
-export const selectCourseSchemaWithLecturesAndSections =
-  selectCourseSchema.extend({
-    sections: selectSectionsSchema
-      .extend({
-        lectures: selectLectureSchema.array(),
-      })
-      .array(),
-  });
-
-export type CourseWithSectionsAndLectures = InferSelectModel<typeof courses> & {
-  sections: (InferSelectModel<typeof sections> & {
-    lectures: InferSelectModel<typeof lectures>[];
-  })[];
+export type LectureWithVideo = InferSelectModel<typeof lectures> & {
+  video?: InferSelectModel<typeof videos>;
 };
 
 export const videos = pgTable("videos", (t) => ({
@@ -305,3 +276,42 @@ export const selectVideoSchema = createSelectSchema(videos).pick({
   duration: true,
   upload_id: true,
 });
+export type Video = InferSelectModel<typeof videos>;
+
+export const selectLectureSchemaWithVideo = selectLectureSchema.extend({
+  video: selectVideoSchema.optional(),
+});
+
+export const selectCourseSchemaWithLecturesAndSections = createSelectSchema(
+  courses
+).extend({
+  sections: createSelectSchema(sections)
+    .extend({
+      lectures: selectLectureSchemaWithVideo.array(), // Use extended schema with video relation
+    })
+    .array(),
+});
+
+export type CourseWithSectionsAndLectures = InferSelectModel<typeof courses> & {
+  sections: (InferSelectModel<typeof sections> & {
+    lectures: (InferSelectModel<typeof lectures> & {
+      video: InferSelectModel<typeof videos> | null;
+    })[];
+  })[];
+};
+
+export const sectionRelations = relations(sections, ({ one, many }) => ({
+  course: one(courses, {
+    fields: [sections.course_id],
+    references: [courses.id],
+  }),
+  lectures: many(lectures),
+}));
+
+export const lectureRelations = relations(lectures, ({ one }) => ({
+  section: one(sections, {
+    fields: [lectures.section_id],
+    references: [sections.id],
+  }),
+  video: one(videos, { fields: [lectures.video], references: [videos.id] }),
+}));
