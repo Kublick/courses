@@ -7,6 +7,7 @@ import { lectures, videos } from "@/server/db/schema";
 import {
   CreateLectureRoute,
   DeleteLectureByIdRoute,
+  LectureByIdRoute,
   LectureListRoute,
   UpdateLectureByIdRoute,
   UploadLectureVideo,
@@ -62,7 +63,6 @@ export const create: AppRouteHandler<CreateLectureRoute> = async (c) => {
         section_id,
         content_type: file.type,
         position: Number(position),
-
         video: videinsert.id,
       })
       .returning();
@@ -95,6 +95,28 @@ export const list: AppRouteHandler<LectureListRoute> = async (c) => {
   const lecture = await db.select().from(lectures);
 
   return c.json(lecture, HttpStatusCodes.OK);
+};
+
+export const getOneById: AppRouteHandler<LectureByIdRoute> = async (c) => {
+  const params = c.req.param("id");
+
+  c.var.logger.info(`Listing lectures ${params}`);
+
+  const lecture = await db.query.lectures.findFirst({
+    where: eq(lectures.id, params),
+    with: {
+      video: true,
+    },
+  });
+
+  if (!lecture) {
+    return c.json({ message: "Lecture not found" }, HttpStatusCodes.NOT_FOUND);
+  }
+
+  return c.json(
+    { ...lecture, video: lecture.video ?? undefined },
+    HttpStatusCodes.OK
+  );
 };
 
 export const deleteById: AppRouteHandler<DeleteLectureByIdRoute> = async (
@@ -162,8 +184,6 @@ export const uploadVideo: AppRouteHandler<UploadLectureVideo> = async (c) => {
         "Content-Type": file.type,
       },
     });
-
-    console.log(uploadResponse);
 
     return c.json({ id: uploadAsset.id }, HttpStatusCodes.OK);
   } catch (error) {

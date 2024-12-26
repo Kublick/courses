@@ -1,9 +1,11 @@
-import Video from "next-video";
+"use client";
 
-const MuxVideoPlayer = ({ playbackId }: { playbackId: string }) => {
+import Player from "next-video/player";
+
+const VideoPlayer = ({ playbackId }: { playbackId: string }) => {
   const videoUrl = `https://stream.mux.com/${playbackId}.m3u8`;
 
-  return <Video src={videoUrl} autoPlay controls loop muted playsInline />;
+  return <Player src={videoUrl} />;
 };
 
-export default MuxVideoPlayer;
+export default VideoPlayer;

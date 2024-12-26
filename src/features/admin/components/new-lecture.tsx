@@ -44,7 +44,7 @@ export const lectureFormSchema = z.object({
     .refine((file) => file !== undefined, {
       message: "Por favor, selecciona un archivo de video",
     })
-    .refine((file) => file.size <= MAX_FILE_SIZE, {
+    .refine((file) => file.size >= MAX_FILE_SIZE, {
       message: "El archivo debe ser de 50MB o menos",
     })
     .refine((file) => ACCEPTED_VIDEO_TYPES.includes(file.type), {

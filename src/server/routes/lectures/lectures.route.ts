@@ -5,9 +5,11 @@ import * as HttpStatusCodes from "stoker/http-status-codes";
 import {
   insertLectureSchema,
   selectLectureSchema,
+  selectLectureSchemaWithVideo,
   updateLectureSchema,
 } from "@/server/db/schema";
 import { createErrorSchema, IdUUIDParamsSchema } from "stoker/openapi/schemas";
+import { notFoundSchema } from "@/server/lib/constants";
 
 export const list = createRoute({
   tags: ["lectures"],
@@ -21,32 +23,24 @@ export const list = createRoute({
   },
 });
 
-// export const create = createRoute({
-//   tags: ["lectures"],
-//   path: "/lectures",
-//   method: "post",
-//   request: {
-//     body: jsonContentRequired(insertLectureSchema, "The lecture to create"),
-//   },
-//   responses: {
-//     [HttpStatusCodes.OK]: jsonContent(
-//       z.object({
-//         id: z.string(),
-//       }),
-//       "The created lecture"
-//     ),
-//     [HttpStatusCodes.UNPROCESSABLE_ENTITY]: jsonContent(
-//       createErrorSchema(insertLectureSchema),
-//       "There is an error creating the lecture"
-//     ),
-//     [HttpStatusCodes.CONFLICT]: jsonContent(
-//       z.object({
-//         message: z.string(),
-//       }),
-//       "The lecture already exists"
-//     ),
-//   },
-// });
+export const getOneById = createRoute({
+  tags: ["lectures"],
+  path: "/lectures/{id}",
+  method: "get",
+  request: {
+    params: IdUUIDParamsSchema,
+  },
+  responses: {
+    [HttpStatusCodes.OK]: jsonContent(
+      selectLectureSchemaWithVideo,
+      "The lecture information"
+    ),
+    [HttpStatusCodes.NOT_FOUND]: jsonContent(
+      notFoundSchema,
+      "Lecture not found"
+    ),
+  },
+});
 
 export const create = createRoute({
   tags: ["lectures"],
@@ -170,6 +164,7 @@ export const updateOneById = createRoute({
 });
 
 export type LectureListRoute = typeof list;
+export type LectureByIdRoute = typeof getOneById;
 export type CreateLectureRoute = typeof create;
 export type DeleteLectureByIdRoute = typeof deleteOneById;
 export type UpdateLectureByIdRoute = typeof updateOneById;

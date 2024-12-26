@@ -3,7 +3,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { insertSectionSchema } from "../../../server/db/schema";
 import { z } from "zod";
 
-export const useCreateCourseSection = () => {
+export const useGetLectures = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (json: z.infer<typeof insertSectionSchema>) => {

@@ -18,6 +18,8 @@ import {
 import { MoreVertical, X, Edit2, Eye } from "lucide-react";
 import { useDeleteLecture } from "../api/use-delete-lecture";
 import { useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import path from "node:path";
 
 interface Props {
   lectureId: string;
@@ -26,6 +28,8 @@ interface Props {
 const LectureAction = ({ lectureId }: Props) => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const { mutate: deleteLecture } = useDeleteLecture();
+  const router = useRouter();
+  const path = usePathname();
 
   const handleDelete = async () => {
     try {
@@ -41,7 +45,7 @@ const LectureAction = ({ lectureId }: Props) => {
       icon: <Edit2 className="mr-2 h-4 w-4" />,
       label: "Editar",
       onClick: () => {
-        // Handle edit logic here
+        router.push(`${path}/${lectureId}`);
       },
     },
     {
