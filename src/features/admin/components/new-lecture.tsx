@@ -25,7 +25,9 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Textarea } from "@/components/ui/textarea";
 import { useCreateLecture } from "../api/use-create-lecture";
-import { getMuxUrl } from "@/server/lib/mux";
+import { toast } from "sonner";
+import { ImageDropzone } from "@/components/ui/image-dropzone";
+import { VideoDropzone } from "@/components/ui/video-dropzone";
 
 const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
 const MAX_THUMBNAIL_SIZE = 2 * 1024 * 1024; // 2MB
@@ -90,7 +92,7 @@ const NewLecture = ({ section_id, lecturesLength }: Props) => {
 
   async function onSubmit(values: z.infer<typeof lectureFormSchema>) {
     setIsUploading(true);
-
+    console.log(values);
     try {
       const position = lecturesLength + 1;
 
@@ -155,6 +157,7 @@ const NewLecture = ({ section_id, lecturesLength }: Props) => {
                       </FormItem>
                     )}
                   />
+
                   <FormField
                     control={form.control}
                     name="file"
@@ -162,15 +165,7 @@ const NewLecture = ({ section_id, lecturesLength }: Props) => {
                       <FormItem>
                         <FormLabel>Archivo</FormLabel>
                         <FormControl>
-                          <Input
-                            type="file"
-                            accept="video/*"
-                            onChange={(event) => {
-                              const file = event.target.files?.[0] || null;
-                              field.onChange(file);
-                              form.trigger("file");
-                            }}
-                          />
+                          <VideoDropzone field={field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -183,15 +178,7 @@ const NewLecture = ({ section_id, lecturesLength }: Props) => {
                       <FormItem>
                         <FormLabel>Miniatura</FormLabel>
                         <FormControl>
-                          <Input
-                            type="file"
-                            accept="image/*"
-                            onChange={(event) => {
-                              const file = event.target.files?.[0] || null;
-                              field.onChange(file);
-                              form.trigger("thumbnail");
-                            }}
-                          />
+                          <ImageDropzone field={field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>

@@ -2,6 +2,7 @@
 
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { nanoid } from "nanoid";
 
 const s3 = new S3Client({
   region: process.env.NEXT_AWS_S3_REGION ?? "",
@@ -11,10 +12,10 @@ const s3 = new S3Client({
   },
 });
 
-export async function getSignedURL(filename: string) {
+export async function getSignedURL() {
   try {
     // Generate unique file name
-    const name = `${Date.now()}-${filename}`;
+    const name = `${nanoid()}`;
 
     // Create a PutObjectCommand
     const putObjectCommand = new PutObjectCommand({

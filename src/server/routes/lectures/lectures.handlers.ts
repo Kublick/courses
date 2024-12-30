@@ -42,7 +42,7 @@ export const create: AppRouteHandler<CreateLectureRoute> = async (c) => {
 
     const name = title.substring(0, 5) + description.substring(0, 5);
 
-    const { signedUrl, fileUrl } = await getSignedURL(name);
+    const { signedUrl, fileUrl } = await getSignedURL();
 
     if (!signedUrl) {
       throw new Error("Error generating signed URL");
@@ -61,7 +61,6 @@ export const create: AppRouteHandler<CreateLectureRoute> = async (c) => {
     }
 
     poster_url = fileUrl;
-    console.log(poster_url);
   }
 
   try {
@@ -88,7 +87,6 @@ export const create: AppRouteHandler<CreateLectureRoute> = async (c) => {
       .returning();
 
     return c.json({ id: lecture.id }, HttpStatusCodes.OK);
-    // return c.json({ id: "id" }, HttpStatusCodes.OK);
   } catch (error) {
     console.error("Error uploading video:", error);
     return c.json(

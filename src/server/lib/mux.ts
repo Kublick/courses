@@ -21,7 +21,7 @@ export const getMuxUrl = async () => {
 
   console.log(
     "🚀 ~ createUploadUrl:AppRouteHandler<UploadLectureVideo>= ~ uploadUrl:",
-    uploadUrl
+    uploadUrl,
   );
 
   const { url, id } = uploadUrl;
@@ -32,35 +32,3 @@ export const getMuxUrl = async () => {
     passthrough,
   };
 };
-
-// export async function createUploadUrl() {
-//   try {
-//     const upload = await mux.video.uploads.create({
-//         cors_origin: '*',
-//         new_asset_settings: {
-//           playback_policy: ['public'],
-//           video_quality: 'basic'
-//         }})
-
-//     return {
-//       uploadUrl: upload.url,
-//       uploadId: upload.id,
-//     }
-//   } catch (error) {
-//     console.error('Error creating Mux upload:', error)
-//     throw new Error('Failed to create upload URL')
-//   }
-// }
-
-// export async function checkUploadStatus(uploadId: string) {
-//   try {
-//     const upload = await mux.video.uploads.retrieve(uploadId)
-//     return {
-//       status: upload.status,
-//       assetId: upload.asset_id,
-//     }
-//   } catch (error) {
-//     console.error('Error checking upload status:', error)
-//     throw new Error('Failed to check upload status')
-//   }
-// }

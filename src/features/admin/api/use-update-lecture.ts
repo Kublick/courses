@@ -10,14 +10,7 @@ export const useUpdateLecture = () => {
       id,
       ...json
     }: { id: string } & z.infer<typeof updateLectureSchema>) => {
-      const {
-        title,
-        description,
-        section_id,
-        position,
-        content_url,
-        content_type,
-      } = json;
+      const { title, description, section_id, position, content_type } = json;
 
       const response = await client.api.lectures[":id"].$put({
         param: { id },
@@ -26,7 +19,6 @@ export const useUpdateLecture = () => {
           description,
           section_id,
           position,
-          content_url,
           content_type,
         },
       });
