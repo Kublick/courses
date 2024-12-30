@@ -11,8 +11,10 @@ export const useCreateLecture = () => {
       file: File;
       section_id: string;
       position: number;
+      thumbnail?: File;
     }) => {
-      const { title, description, file, section_id, position } = data;
+      const { title, description, file, section_id, position, thumbnail } =
+        data;
 
       // Create a FormData object
       const formObject = {
@@ -21,6 +23,7 @@ export const useCreateLecture = () => {
         file,
         section_id,
         position: position.toString(),
+        thumbnail: thumbnail ? thumbnail : undefined,
       };
 
       const response = await client.api.lectures.$post({

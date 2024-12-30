@@ -8,6 +8,7 @@ const router = createRouter()
   .openapi(routes.deleteOneById, handlers.deleteById)
   .openapi(routes.updateOneById, handlers.updateOneById)
   .openapi(routes.uploadVideo, handlers.uploadVideo)
-  .openapi(routes.getOneById, handlers.getOneById);
+  .openapi(routes.getOneById, handlers.getOneById)
+  .openapi(routes.publishLecture, handlers.publishLecture);
 
 export default router;

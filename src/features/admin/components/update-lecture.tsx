@@ -131,7 +131,6 @@ const UpdateLecture = ({ id }: Props) => {
             </Card>
           </div>
         </Card>
-        {JSON.stringify(data, null, 2)}
       </div>
     </Form>
   );

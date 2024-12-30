@@ -28,6 +28,7 @@ import { useCreateLecture } from "../api/use-create-lecture";
 import { getMuxUrl } from "@/server/lib/mux";
 
 const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
+const MAX_THUMBNAIL_SIZE = 2 * 1024 * 1024; // 2MB
 const ACCEPTED_VIDEO_TYPES = [
   "video/mp4",
   "video/mpeg",
@@ -35,6 +36,8 @@ const ACCEPTED_VIDEO_TYPES = [
   "video/x-msvideo",
   "video/webm",
 ];
+
+const ACCEPTED_THUMBNAIL_TYPES = ["image/jpeg", "image/png", "image/gif"];
 
 export const lectureFormSchema = z.object({
   title: z.string().min(1, { message: "El título es obligatorio" }),
@@ -44,13 +47,26 @@ export const lectureFormSchema = z.object({
     .refine((file) => file !== undefined, {
       message: "Por favor, selecciona un archivo de video",
     })
-    .refine((file) => file.size >= MAX_FILE_SIZE, {
+    .refine((file) => file.size <= MAX_FILE_SIZE, {
       message: "El archivo debe ser de 50MB o menos",
     })
     .refine((file) => ACCEPTED_VIDEO_TYPES.includes(file.type), {
       message:
         "Por favor, sube un archivo de video válido (mp4, mpeg, mov, avi, webm)",
     }),
+  thumbnail: z
+    .instanceof(File)
+    .refine((file) => file !== undefined, {
+      message: "Por favor, selecciona un archivo de video",
+    })
+    .refine((file) => file.size < MAX_THUMBNAIL_SIZE, {
+      message: "El archivo debe ser de 50MB o menos",
+    })
+    .refine((file) => ACCEPTED_THUMBNAIL_TYPES.includes(file.type), {
+      message:
+        "Por favor, sube un archivo de video válido (mp4, mpeg, mov, avi, webm)",
+    })
+    .optional(),
 });
 
 interface Props {
@@ -78,27 +94,13 @@ const NewLecture = ({ section_id, lecturesLength }: Props) => {
     try {
       const position = lecturesLength + 1;
 
-      const uploadAsset = await getMuxUrl();
-
-      const uploadResponse = await fetch(uploadAsset.url, {
-        method: "PUT",
-        body: values.file,
-        headers: {
-          "Content-Type": values.file.type,
-        },
-      });
-
-      if (!uploadResponse.ok) {
-        throw new Error("Video upload to Mux failed");
-      }
-
-      // Create lecture with Mux video URL
       createLecture.mutate({
         title: values.title,
         description: values.description ?? "",
         section_id: section_id,
         position: position,
         file: values.file,
+        thumbnail: values.thumbnail,
       });
 
       // Reset form and close dialog
@@ -106,6 +108,7 @@ const NewLecture = ({ section_id, lecturesLength }: Props) => {
       setOpen(false);
     } catch (error) {
       console.error("Lecture creation failed:", error);
+      toast.error("Error al crear la lección");
       // Handle error (maybe show a toast or error message)
     } finally {
       setIsUploading(false);
@@ -166,6 +169,27 @@ const NewLecture = ({ section_id, lecturesLength }: Props) => {
                               const file = event.target.files?.[0] || null;
                               field.onChange(file);
                               form.trigger("file");
+                            }}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="thumbnail"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Miniatura</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="file"
+                            accept="image/*"
+                            onChange={(event) => {
+                              const file = event.target.files?.[0] || null;
+                              field.onChange(file);
+                              form.trigger("thumbnail");
                             }}
                           />
                         </FormControl>

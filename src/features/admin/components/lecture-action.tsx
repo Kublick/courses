@@ -23,9 +23,10 @@ import path from "node:path";
 
 interface Props {
   lectureId: string;
+  is_published: boolean;
 }
 
-const LectureAction = ({ lectureId }: Props) => {
+const LectureAction = ({ lectureId, is_published }: Props) => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const { mutate: deleteLecture } = useDeleteLecture();
   const router = useRouter();
@@ -50,7 +51,7 @@ const LectureAction = ({ lectureId }: Props) => {
     },
     {
       icon: <Eye className="mr-2 h-4 w-4" />,
-      label: "Publicar",
+      label: !is_published ? "Publicar" : "Remover",
       onClick: () => {
         // Handle publish logic here
       },

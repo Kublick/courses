@@ -7,7 +7,6 @@ const nextConfig: NextConfig = {
       {
         protocol: "https",
         hostname: "image.mux.com",
-
         pathname: "/**",
       },
     ],

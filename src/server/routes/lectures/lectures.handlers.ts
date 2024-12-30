@@ -9,28 +9,19 @@ import {
   DeleteLectureByIdRoute,
   LectureByIdRoute,
   LectureListRoute,
+  PublishLectureRoute,
   UpdateLectureByIdRoute,
   UploadLectureVideo,
 } from "./lectures.route";
 import { eq } from "drizzle-orm";
 import { getMuxUrl } from "@/server/lib/mux";
-
-// const s3 = new S3Client({
-//   endpoint: "http://localhost:9000", // MinIO endpoint
-//   region: "us-east-1", // Default region
-//   credentials: {
-//     accessKeyId: "H4FKrxv6bz1m0mf6U54B", // MinIO username
-//     secretAccessKey: "H4FKrxv6bz1m0mf6U54B", // MinIO password
-//   },
-// });
+import { getSignedURL } from "@/lib/s3Actions";
 
 export const create: AppRouteHandler<CreateLectureRoute> = async (c) => {
   c.var.logger.info("Creating lecture");
 
-  const { title, description, file, section_id, position } =
+  const { title, description, file, section_id, position, thumbnail } =
     c.req.valid("form");
-
-  console.log(title, description, file, section_id, position);
 
   const { url, passthrough, id } = await getMuxUrl();
 
@@ -45,6 +36,34 @@ export const create: AppRouteHandler<CreateLectureRoute> = async (c) => {
   if (!uploadResponse.ok) {
     throw new Error("Video upload to Mux failed");
   }
+  let poster_url = null;
+  if (thumbnail) {
+    console.log("inserting thumbnail", thumbnail);
+
+    const name = title.substring(0, 5) + description.substring(0, 5);
+
+    const { signedUrl, fileUrl } = await getSignedURL(name);
+
+    if (!signedUrl) {
+      throw new Error("Error generating signed URL");
+    }
+
+    // Upload the thumbnail to S3
+    const uploadThumbnailResponse = await fetch(signedUrl, {
+      method: "PUT",
+      body: thumbnail,
+      headers: {
+        "Content-Type": thumbnail.type,
+      },
+    });
+    if (!uploadThumbnailResponse.ok) {
+      throw new Error("Thumbnail upload to S3 failed");
+    }
+
+    poster_url = fileUrl;
+    console.log(poster_url);
+  }
+
   try {
     const [videinsert] = await db
       .insert(videos)
@@ -64,10 +83,12 @@ export const create: AppRouteHandler<CreateLectureRoute> = async (c) => {
         content_type: file.type,
         position: Number(position),
         video: videinsert.id,
+        poster_url: poster_url ?? null,
       })
       .returning();
 
     return c.json({ id: lecture.id }, HttpStatusCodes.OK);
+    // return c.json({ id: "id" }, HttpStatusCodes.OK);
   } catch (error) {
     console.error("Error uploading video:", error);
     return c.json(
@@ -84,7 +105,7 @@ export const create: AppRouteHandler<CreateLectureRoute> = async (c) => {
         },
         success: false,
       },
-      HttpStatusCodes.UNPROCESSABLE_ENTITY
+      HttpStatusCodes.UNPROCESSABLE_ENTITY,
     );
   }
 };
@@ -115,12 +136,12 @@ export const getOneById: AppRouteHandler<LectureByIdRoute> = async (c) => {
 
   return c.json(
     { ...lecture, video: lecture.video ?? undefined },
-    HttpStatusCodes.OK
+    HttpStatusCodes.OK,
   );
 };
 
 export const deleteById: AppRouteHandler<DeleteLectureByIdRoute> = async (
-  c
+  c,
 ) => {
   c.var.logger.info("Deleting Lecture");
 
@@ -136,7 +157,7 @@ export const deleteById: AppRouteHandler<DeleteLectureByIdRoute> = async (
 };
 
 export const updateOneById: AppRouteHandler<UpdateLectureByIdRoute> = async (
-  c
+  c,
 ) => {
   c.var.logger.info("Updating lecture");
 
@@ -171,13 +192,13 @@ export const uploadVideo: AppRouteHandler<UploadLectureVideo> = async (c) => {
   if (!file) {
     return c.json(
       { message: "File is required" },
-      HttpStatusCodes.UNPROCESSABLE_ENTITY
+      HttpStatusCodes.UNPROCESSABLE_ENTITY,
     );
   }
   try {
     const uploadAsset = await getMuxUrl();
 
-    const uploadResponse = await fetch(uploadAsset.url, {
+    await fetch(uploadAsset.url, {
       method: "PUT",
       body: file,
       headers: {
@@ -190,7 +211,29 @@ export const uploadVideo: AppRouteHandler<UploadLectureVideo> = async (c) => {
     console.error("Error uploading video:", error);
     return c.json(
       { message: "Por favor, selecciona un archivo de video" },
-      HttpStatusCodes.UNPROCESSABLE_ENTITY
+      HttpStatusCodes.UNPROCESSABLE_ENTITY,
     );
   }
+};
+
+export const publishLecture: AppRouteHandler<PublishLectureRoute> = async (
+  c,
+) => {
+  c.var.logger.info("Publishing lecture");
+
+  const id = c.req.param("id");
+  const { is_published } = c.req.valid("json");
+
+  const lecture = await db
+    .update(lectures)
+    .set({
+      is_published: is_published,
+    })
+    .where(eq(lectures.id, id));
+
+  if (!lecture) {
+    return c.json({ message: "Lecture not found" }, HttpStatusCodes.NOT_FOUND);
+  }
+
+  return c.json({ message: "Lecture published" }, HttpStatusCodes.OK);
 };

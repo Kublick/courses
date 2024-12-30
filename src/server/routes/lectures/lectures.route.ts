@@ -18,7 +18,7 @@ export const list = createRoute({
   responses: {
     [HttpStatusCodes.OK]: jsonContent(
       z.array(selectLectureSchema),
-      "The list of lectures"
+      "The list of lectures",
     ),
   },
 });
@@ -33,11 +33,11 @@ export const getOneById = createRoute({
   responses: {
     [HttpStatusCodes.OK]: jsonContent(
       selectLectureSchemaWithVideo,
-      "The lecture information"
+      "The lecture information",
     ),
     [HttpStatusCodes.NOT_FOUND]: jsonContent(
       notFoundSchema,
-      "Lecture not found"
+      "Lecture not found",
     ),
   },
 });
@@ -58,6 +58,11 @@ export const create = createRoute({
             }),
             section_id: z.string(),
             position: z.string(),
+            thumbnail: z
+              .custom<File>((value) => value instanceof File, {
+                message: "Expected a valid File instance",
+              })
+              .optional(),
           }),
         },
       },
@@ -68,17 +73,17 @@ export const create = createRoute({
       z.object({
         id: z.string(),
       }),
-      "The created lecture"
+      "The created lecture",
     ),
     [HttpStatusCodes.UNPROCESSABLE_ENTITY]: jsonContent(
       createErrorSchema(insertLectureSchema),
-      "There is an error creating the lecture"
+      "There is an error creating the lecture",
     ),
     [HttpStatusCodes.CONFLICT]: jsonContent(
       z.object({
         message: z.string(),
       }),
-      "The lecture already exists"
+      "The lecture already exists",
     ),
   },
 });
@@ -105,13 +110,13 @@ export const uploadVideo = createRoute({
       z.object({
         id: z.string(),
       }),
-      "The created video"
+      "The created video",
     ),
     [HttpStatusCodes.UNPROCESSABLE_ENTITY]: jsonContent(
       z.object({
         message: z.string(),
       }),
-      "Validation error"
+      "Validation error",
     ),
   },
 });
@@ -128,13 +133,13 @@ export const deleteOneById = createRoute({
       z.object({
         message: z.string(),
       }),
-      "The lecture was deleted"
+      "The lecture was deleted",
     ),
     [HttpStatusCodes.NOT_FOUND]: jsonContent(
       z.object({
         message: z.string(),
       }),
-      "The lecture was not found"
+      "The lecture was not found",
     ),
   },
 });
@@ -152,13 +157,43 @@ export const updateOneById = createRoute({
       z.object({
         message: z.string(),
       }),
-      "The lecture was updated"
+      "The lecture was updated",
     ),
     [HttpStatusCodes.NOT_FOUND]: jsonContent(
       z.object({
         message: z.string(),
       }),
-      "The lecture was not found"
+      "The lecture was not found",
+    ),
+  },
+});
+
+export const publishLecture = createRoute({
+  tags: ["lectures"],
+  path: "/lectures/{id}/publish",
+  method: "put",
+  request: {
+    params: IdUUIDParamsSchema,
+    body: jsonContentRequired(
+      z.object({
+        is_published: z.boolean(),
+      }),
+      "The lecture to publish",
+    ),
+  },
+
+  responses: {
+    [HttpStatusCodes.OK]: jsonContent(
+      z.object({
+        message: z.string(),
+      }),
+      "The lecture was published",
+    ),
+    [HttpStatusCodes.NOT_FOUND]: jsonContent(
+      z.object({
+        message: z.string(),
+      }),
+      "The lecture was not found",
     ),
   },
 });
@@ -169,3 +204,4 @@ export type CreateLectureRoute = typeof create;
 export type DeleteLectureByIdRoute = typeof deleteOneById;
 export type UpdateLectureByIdRoute = typeof updateOneById;
 export type UploadLectureVideo = typeof uploadVideo;
+export type PublishLectureRoute = typeof publishLecture;

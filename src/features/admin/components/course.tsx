@@ -39,6 +39,7 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import LectureAction from "./lecture-action";
+import { Separator } from "@/components/ui/separator";
 
 interface Props {
   slug: string;
@@ -52,13 +53,13 @@ const Course = ({ slug }: Props) => {
   useEffect(() => {
     if (data?.sections) {
       const sortedSections = [...data.sections].sort(
-        (a, b) => (a.position || 0) - (b.position || 0)
+        (a, b) => (a.position || 0) - (b.position || 0),
       );
 
       const sectionsWithSortedLectures = sortedSections.map((section) => ({
         ...section,
         lectures: [...section.lectures].sort(
-          (a, b) => (a.position || 0) - (b.position || 0)
+          (a, b) => (a.position || 0) - (b.position || 0),
         ),
       }));
 
@@ -98,7 +99,7 @@ const Course = ({ slug }: Props) => {
             {data.is_published ? (
               <Badge variant="success">Publicado</Badge>
             ) : (
-              <Badge>En desarrollo</Badge>
+              <Badge variant="outline">En desarrollo</Badge>
             )}
           </CardFooter>
         </Card>
@@ -113,6 +114,7 @@ const Course = ({ slug }: Props) => {
                     <h2 className="text-lg font-semibold mb-4">
                       Seccion: {s.title}
                     </h2>
+
                     <NewLecture
                       section_id={s.id}
                       lecturesLength={s.lectures.length}
@@ -121,6 +123,17 @@ const Course = ({ slug }: Props) => {
                   <div className="flex items-center space-x-2 text-muted-foreground">
                     <p>{s.lectures.length} Lecciones</p>
                     <BookOpenText className="h-4 w-4 " />
+                  </div>
+
+                  <div className="flex justify-end ">
+                    {s.is_published ? (
+                      <Badge variant="success">Publicado</Badge>
+                    ) : (
+                      <Badge variant="outline">En desarrollo</Badge>
+                    )}
+                  </div>
+                  <div className="py-4">
+                    <Separator />
                   </div>
                   <CollapsibleTrigger asChild>
                     <Button variant="ghost" size="sm">
@@ -133,6 +146,7 @@ const Course = ({ slug }: Props) => {
                     </Button>
                   </CollapsibleTrigger>
                 </CardHeader>
+
                 <CollapsibleContent className="space-y-2">
                   <CardContent className="space-y-4">
                     {s.lectures.map((l) => (
@@ -141,7 +155,10 @@ const Course = ({ slug }: Props) => {
                           <div className="flex justify-between items-center">
                             <p>Nombre: {l.title}</p>
                             <div className="flex gap-2 items-center">
-                              <LectureAction lectureId={l.id} />
+                              <LectureAction
+                                lectureId={l.id}
+                                is_published={l.is_published ?? false}
+                              />
                               {/* <HandleDeleteLecture lectureId={l.id} /> */}
                             </div>
                           </div>

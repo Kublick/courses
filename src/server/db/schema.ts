@@ -191,6 +191,7 @@ export const lectures = pgTable("lectures", (t) => ({
   position: t.integer().default(1),
   video: t.uuid().references(() => videos.id),
   is_published: t.boolean().default(false),
+  poster_url: t.text(),
 }));
 
 export type Lecture = InferSelectModel<typeof lectures>;
@@ -212,6 +213,7 @@ export const insertLectureSchema = createInsertSchema(lectures, {
   section_id: (schema) => schema.uuid(),
   video: (schema) => schema.uuid().optional(),
   position: (schema) => schema.openapi({ minimum: 1 }),
+  poster_url: (schema) => schema.optional(),
 })
   .omit({
     id: true,
@@ -232,6 +234,8 @@ export const selectLectureSchema = createSelectSchema(lectures).pick({
   content_type: true,
   position: true,
   video: true,
+  is_published: true,
+  poster_url: true,
 });
 
 export const updateLectureSchema = createUpdateSchema(lectures).omit({
@@ -283,7 +287,7 @@ export const selectLectureSchemaWithVideo = selectLectureSchema.extend({
 });
 
 export const selectCourseSchemaWithLecturesAndSections = createSelectSchema(
-  courses
+  courses,
 ).extend({
   sections: createSelectSchema(sections)
     .extend({
