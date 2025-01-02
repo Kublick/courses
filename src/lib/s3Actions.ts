@@ -3,6 +3,17 @@
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { nanoid } from "nanoid";
+import sharp from "sharp";
+
+interface SignedURLResponse {
+  success: boolean;
+  signedUrl?: string;
+  fileUrl?: string;
+  error?: string;
+}
+
+const bucketName = process.env.NEXT_AWS_S3_BUCKET_NAME;
+const region = process.env.NEXT_AWS_S3_REGION;
 
 const s3 = new S3Client({
   region: process.env.NEXT_AWS_S3_REGION ?? "",
@@ -12,27 +23,36 @@ const s3 = new S3Client({
   },
 });
 
-export async function getSignedURL() {
+export async function getSignedURL(
+  fileType: string = "webp",
+  contentType: string = "image/webp",
+  expiresIn: number = 60
+): Promise<SignedURLResponse> {
   try {
-    // Generate unique file name
-    const name = `${nanoid()}.webp`;
+    if (!bucketName || !region) {
+      throw new Error("Missing required environment variables");
+    }
 
-    // Create a PutObjectCommand
+    const name = `${nanoid()}.${fileType}`;
+
     const putObjectCommand = new PutObjectCommand({
-      Bucket: process.env.NEXT_AWS_S3_BUCKET_NAME || "",
+      Bucket: bucketName,
       Key: name,
-      ContentType: "image/webp",
+      ContentType: contentType,
+      Metadata: {
+        "x-amz-meta-uploaded": new Date().toISOString(),
+      },
     });
 
-    // Generate a pre-signed URL
-    const url = await getSignedUrl(s3, putObjectCommand, { expiresIn: 60 });
+    const signedUrl = await getSignedUrl(s3, putObjectCommand, {
+      expiresIn,
+    });
 
-    // Construct the public file URL
-    const fileUrl = `https://${process.env.NEXT_AWS_S3_BUCKET_NAME || ""}.s3.${process.env.NEXT_AWS_S3_REGION || ""}.amazonaws.com/${name}`;
+    const fileUrl = `https://${bucketName}.s3.${region}.amazonaws.com/${name}`;
 
     return {
       success: true,
-      signedUrl: url,
+      signedUrl,
       fileUrl,
     };
   } catch (error) {
@@ -43,3 +63,39 @@ export async function getSignedURL() {
     };
   }
 }
+
+export const processThumbnail = async (file: File): Promise<Buffer> => {
+  const buffer = Buffer.from(await file.arrayBuffer());
+  return sharp(buffer)
+    .resize(1080, 1920, {
+      fit: "inside",
+      withoutEnlargement: true,
+    })
+    .webp({ quality: 80 })
+    .toBuffer();
+};
+
+export const uploadThumbnail = async (file: File) => {
+  const { signedUrl, fileUrl } = await getSignedURL();
+
+  if (!signedUrl || !fileUrl) {
+    throw new Error("Error generating signed URL");
+  }
+
+  const processedThumbnail = await processThumbnail(file);
+
+  const uploadResponse = await fetch(signedUrl, {
+    method: "PUT",
+    body: processedThumbnail,
+    headers: {
+      "Content-Type": "image/webp",
+      "Content-Length": processedThumbnail.length.toString(),
+    },
+  });
+
+  if (!uploadResponse.ok) {
+    throw new Error(`Failed to upload thumbnail: ${uploadResponse.statusText}`);
+  }
+
+  return fileUrl;
+};

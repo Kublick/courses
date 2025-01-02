@@ -15,8 +15,7 @@ import {
 } from "./lectures.route";
 import { eq } from "drizzle-orm";
 import { getMuxUrl } from "@/server/lib/mux";
-import { getSignedURL } from "@/lib/s3Actions";
-import sharp from "sharp";
+import { uploadThumbnail } from "@/lib/s3Actions";
 
 export const create: AppRouteHandler<CreateLectureRoute> = async (c) => {
   c.var.logger.info("Creating lecture");
@@ -39,41 +38,7 @@ export const create: AppRouteHandler<CreateLectureRoute> = async (c) => {
   }
   let poster_url = null;
   if (thumbnail) {
-    // TODO simplify this component where the thumbnail is processed via sharp in a function
-
-    const { signedUrl, fileUrl } = await getSignedURL();
-
-    if (!signedUrl) {
-      throw new Error("Error generating signed URL");
-    }
-
-    const thumbnailBuffer = Buffer.from(await thumbnail.arrayBuffer());
-    const webpThumbnailBuffer = await sharp(thumbnailBuffer)
-      .webp({ quality: 80 })
-      .toBuffer();
-
-    try {
-      const uploadThumbnailResponse = await fetch(signedUrl, {
-        method: "PUT",
-        body: webpThumbnailBuffer,
-        headers: {
-          "Content-Type": thumbnail.type,
-        },
-      });
-
-      if (!uploadThumbnailResponse.ok) {
-        throw new Error(
-          `Failed to upload thumbnail: ${uploadThumbnailResponse.statusText}`
-        );
-      }
-
-      poster_url = fileUrl;
-    } catch (error) {
-      if (error instanceof Error) {
-        throw new Error("Thumbnail upload to S3 failed", error);
-      }
-      console.log(error);
-    }
+    poster_url = await uploadThumbnail(thumbnail);
   }
 
   try {
