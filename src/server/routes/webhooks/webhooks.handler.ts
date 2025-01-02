@@ -34,6 +34,9 @@ export const muxWebHook: AppRouteHandler<MuxWebHookRoute> = async (c) => {
       case "video.asset.ready":
         await handleAssetReady(data);
         break;
+      case "video.upload.asset_created":
+        console.log("video.upload.asset_created");
+        break;
       case "video.live_stream.started":
         await handleLiveStreamStarted(data);
         break;

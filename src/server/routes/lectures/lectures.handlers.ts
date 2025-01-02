@@ -16,6 +16,7 @@ import {
 import { eq } from "drizzle-orm";
 import { getMuxUrl } from "@/server/lib/mux";
 import { getSignedURL } from "@/lib/s3Actions";
+import sharp from "sharp";
 
 export const create: AppRouteHandler<CreateLectureRoute> = async (c) => {
   c.var.logger.info("Creating lecture");
@@ -38,9 +39,7 @@ export const create: AppRouteHandler<CreateLectureRoute> = async (c) => {
   }
   let poster_url = null;
   if (thumbnail) {
-    console.log("inserting thumbnail", thumbnail);
-
-    const name = title.substring(0, 5) + description.substring(0, 5);
+    // TODO simplify this component where the thumbnail is processed via sharp in a function
 
     const { signedUrl, fileUrl } = await getSignedURL();
 
@@ -48,19 +47,33 @@ export const create: AppRouteHandler<CreateLectureRoute> = async (c) => {
       throw new Error("Error generating signed URL");
     }
 
-    // Upload the thumbnail to S3
-    const uploadThumbnailResponse = await fetch(signedUrl, {
-      method: "PUT",
-      body: thumbnail,
-      headers: {
-        "Content-Type": thumbnail.type,
-      },
-    });
-    if (!uploadThumbnailResponse.ok) {
-      throw new Error("Thumbnail upload to S3 failed");
-    }
+    const thumbnailBuffer = Buffer.from(await thumbnail.arrayBuffer());
+    const webpThumbnailBuffer = await sharp(thumbnailBuffer)
+      .webp({ quality: 80 })
+      .toBuffer();
 
-    poster_url = fileUrl;
+    try {
+      const uploadThumbnailResponse = await fetch(signedUrl, {
+        method: "PUT",
+        body: webpThumbnailBuffer,
+        headers: {
+          "Content-Type": thumbnail.type,
+        },
+      });
+
+      if (!uploadThumbnailResponse.ok) {
+        throw new Error(
+          `Failed to upload thumbnail: ${uploadThumbnailResponse.statusText}`
+        );
+      }
+
+      poster_url = fileUrl;
+    } catch (error) {
+      if (error instanceof Error) {
+        throw new Error("Thumbnail upload to S3 failed", error);
+      }
+      console.log(error);
+    }
   }
 
   try {
@@ -103,7 +116,7 @@ export const create: AppRouteHandler<CreateLectureRoute> = async (c) => {
         },
         success: false,
       },
-      HttpStatusCodes.UNPROCESSABLE_ENTITY,
+      HttpStatusCodes.UNPROCESSABLE_ENTITY
     );
   }
 };
@@ -134,12 +147,12 @@ export const getOneById: AppRouteHandler<LectureByIdRoute> = async (c) => {
 
   return c.json(
     { ...lecture, video: lecture.video ?? undefined },
-    HttpStatusCodes.OK,
+    HttpStatusCodes.OK
   );
 };
 
 export const deleteById: AppRouteHandler<DeleteLectureByIdRoute> = async (
-  c,
+  c
 ) => {
   c.var.logger.info("Deleting Lecture");
 
@@ -155,7 +168,7 @@ export const deleteById: AppRouteHandler<DeleteLectureByIdRoute> = async (
 };
 
 export const updateOneById: AppRouteHandler<UpdateLectureByIdRoute> = async (
-  c,
+  c
 ) => {
   c.var.logger.info("Updating lecture");
 
@@ -190,7 +203,7 @@ export const uploadVideo: AppRouteHandler<UploadLectureVideo> = async (c) => {
   if (!file) {
     return c.json(
       { message: "File is required" },
-      HttpStatusCodes.UNPROCESSABLE_ENTITY,
+      HttpStatusCodes.UNPROCESSABLE_ENTITY
     );
   }
   try {
@@ -209,13 +222,13 @@ export const uploadVideo: AppRouteHandler<UploadLectureVideo> = async (c) => {
     console.error("Error uploading video:", error);
     return c.json(
       { message: "Por favor, selecciona un archivo de video" },
-      HttpStatusCodes.UNPROCESSABLE_ENTITY,
+      HttpStatusCodes.UNPROCESSABLE_ENTITY
     );
   }
 };
 
 export const publishLecture: AppRouteHandler<PublishLectureRoute> = async (
-  c,
+  c
 ) => {
   c.var.logger.info("Publishing lecture");
 

@@ -15,13 +15,13 @@ const s3 = new S3Client({
 export async function getSignedURL() {
   try {
     // Generate unique file name
-    const name = `${nanoid()}`;
+    const name = `${nanoid()}.webp`;
 
     // Create a PutObjectCommand
     const putObjectCommand = new PutObjectCommand({
       Bucket: process.env.NEXT_AWS_S3_BUCKET_NAME || "",
       Key: name,
-      ContentType: `application/octet-stream`,
+      ContentType: "image/webp",
     });
 
     // Generate a pre-signed URL
