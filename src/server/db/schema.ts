@@ -3,6 +3,7 @@ import { InferSelectModel, relations } from "drizzle-orm";
 import {
   boolean,
   customType,
+  integer,
   pgEnum,
   pgTable,
   text,
@@ -96,6 +97,8 @@ export const courses = pgTable("courses", {
   price: numericCasted({ precision: 10, scale: 2 }).notNull(),
   is_published: boolean().default(false),
   slug: text().notNull().unique(),
+  stripe_product_id: text(),
+  stripe_price_id: text(),
   created_at: timestamp("created_at").defaultNow().notNull(),
   updated_at: timestamp("updated_at"),
 });
@@ -192,6 +195,7 @@ export const lectures = pgTable("lectures", (t) => ({
   video: t.uuid().references(() => videos.id),
   is_published: t.boolean().default(false),
   poster_url: t.text(),
+  slug: t.text(),
 }));
 
 export type Lecture = InferSelectModel<typeof lectures>;
@@ -287,7 +291,7 @@ export const selectLectureSchemaWithVideo = selectLectureSchema.extend({
 });
 
 export const selectCourseSchemaWithLecturesAndSections = createSelectSchema(
-  courses,
+  courses
 ).extend({
   sections: createSelectSchema(sections)
     .extend({

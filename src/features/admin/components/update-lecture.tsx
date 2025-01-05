@@ -112,7 +112,10 @@ const UpdateLecture = ({ id }: Props) => {
                     <div className="grid grid-cols-3 gap-4">
                       <div className="col-span-2">
                         <div className="mt-4">
-                          <VideoPlayer playbackId={data.video.playback_id} />
+                          <VideoPlayer
+                            playbackId={data.video.playback_id}
+                            posterUrl={data.poster_url ?? ""}
+                          />
                         </div>
                       </div>
                       <div className="mt-4 text-xs">
@@ -120,8 +123,8 @@ const UpdateLecture = ({ id }: Props) => {
                         <Image
                           src={`https://image.mux.com/${data.video.playback_id}/thumbnail.png?time=2&height=121&width=214`}
                           alt={`Thumbnail de la sección ${data?.title}`}
-                          width={200}
-                          height={200}
+                          width={320}
+                          height={320}
                         />
                       </div>
                     </div>
