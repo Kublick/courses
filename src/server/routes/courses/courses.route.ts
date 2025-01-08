@@ -50,7 +50,7 @@ export const getOneBySlug = createRoute({
   responses: {
     [HttpStatusCodes.OK]: jsonContent(
       selectCourseSchemaWithLecturesAndSections,
-      "The course with all info"
+      "The course with lectures and sections information"
     ),
     [HttpStatusCodes.NOT_FOUND]: jsonContent(
       notFoundSchema,

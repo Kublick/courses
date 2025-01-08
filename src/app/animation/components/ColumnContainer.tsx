@@ -3,6 +3,7 @@ import { Column, Task } from "./UserList";
 import { SortableContext, useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import TaskCard from "./TaskCard";
+import { GripVertical } from "lucide-react";
 
 interface Props {
   column: Column;
@@ -46,10 +47,10 @@ const ColumnContainer = (props: Props) => {
     <div
       ref={setNodeRef}
       {...attributes}
-      {...listeners}
       style={style}
       className="flex flex-col gap-4 h-[320px] w-48 bg-teal-200 p-2"
     >
+      <GripVertical size={20} className="cursor-grab" {...listeners} />
       {column.title}
       <SortableContext items={tasksIds}>
         {tasks.map((task) => (

@@ -2,6 +2,7 @@ import React from "react";
 import { Task } from "./UserList";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { GripVertical } from "lucide-react";
 
 interface Props {
   task: Task;
@@ -42,10 +43,10 @@ const TaskCard = (props: Props) => {
     <div
       ref={setNodeRef}
       {...attributes}
-      {...listeners}
       style={style}
-      className="bg-purple-50 px-3 py-2 rounded-lg"
+      className="bg-purple-50 px-3 py-2 rounded-lg flex space-x-4"
     >
+      <GripVertical size={20} className="cursor-grab" {...listeners} />
       {task.content}
     </div>
   );

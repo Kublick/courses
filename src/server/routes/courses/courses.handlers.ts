@@ -74,6 +74,8 @@ export const list: AppRouteHandler<ListCoursesRoute> = async (c) => {
 export const getOneBySlug: AppRouteHandler<GetOneCourseRoute> = async (c) => {
   const slug = c.req.param("slug");
 
+  c.var.logger.info("Getting course by slug", slug);
+
   const courseData = await db.query.courses.findFirst({
     where: eq(courses.slug, slug),
     with: {
@@ -88,8 +90,6 @@ export const getOneBySlug: AppRouteHandler<GetOneCourseRoute> = async (c) => {
       },
     },
   });
-
-  console.log("🚀 ~ courseData:", courseData);
 
   if (!courseData) {
     return c.json({ message: "Course not found" }, HttpStatusCodes.NOT_FOUND);

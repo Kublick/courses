@@ -1,9 +1,9 @@
 "use client";
 import React, { useMemo, useState } from "react";
-import ColumnContainer from "./ColumnContainer";
 import {
   DragEndEvent,
   DragOverEvent,
+  DragOverlay,
   DragStartEvent,
   PointerSensor,
   useSensor,
@@ -11,8 +11,9 @@ import {
 } from "@dnd-kit/core";
 import { arrayMove, SortableContext } from "@dnd-kit/sortable";
 import dynamic from "next/dynamic";
-import { DragOverlay } from "@dnd-kit/core";
-import TaskCard from "./TaskCard";
+import SectionCard from "./section-card";
+import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
+
 const DndContextWithNoSSR = dynamic(
   () => import("@dnd-kit/core").then((mod) => mod.DndContext),
   {
@@ -20,22 +21,7 @@ const DndContextWithNoSSR = dynamic(
   }
 );
 
-const initialColumns = [
-  {
-    id: 1,
-    title: "test",
-  },
-  {
-    id: 2,
-    title: "Seccion Duper",
-  },
-  {
-    id: 3,
-    title: "New Duper Section with nothing",
-  },
-];
-
-const values = [
+const initialValues = [
   {
     id: "ee5d1c95-199d-4eb9-9687-ac0175cde5c5",
     course_id: "89271c6d-e970-4d20-8ec5-1b46a21ffe82",
@@ -43,7 +29,7 @@ const values = [
     title: "test",
     created_at: "2024-12-15T17:25:04.205834",
     updated_at: null,
-    position: 1,
+    position: 0,
     lectures: [
       {
         id: "835ef05d-1539-4c2d-9d98-3b5fd883e660",
@@ -53,7 +39,7 @@ const values = [
         content_type: "video/mp4",
         created_at: "2025-01-02T03:07:10.788885",
         updated_at: null,
-        position: 5,
+        position: 0,
         video: {
           id: "e9611a27-2879-4a70-8493-a492d8494727",
           status: "ready",
@@ -78,7 +64,7 @@ const values = [
         content_type: "video/mp4",
         created_at: "2025-01-02T00:39:27.857212",
         updated_at: null,
-        position: 6,
+        position: 1,
         video: {
           id: "23e8c8d7-6a89-4e6f-9e87-97d901aa619e",
           status: "ready",
@@ -103,7 +89,7 @@ const values = [
         content_type: "video/mp4",
         created_at: "2025-01-02T00:57:16.04759",
         updated_at: null,
-        position: 7,
+        position: 2,
         video: {
           id: "1cedcacf-89c5-41f4-a921-c92b32da18cf",
           status: "waiting",
@@ -120,56 +106,6 @@ const values = [
           "https://incrementatuconsulta.s3.us-west-1.amazonaws.com/W5cdF-rbn7JWjq_EcP915.webp",
         slug: null,
       },
-      {
-        id: "11b28457-05fd-4913-b307-78148c681f0e",
-        section_id: "ee5d1c95-199d-4eb9-9687-ac0175cde5c5",
-        title: "buenas buenas",
-        description: "Test Buenas",
-        content_type: "video/mp4",
-        created_at: "2025-01-02T01:02:22.655767",
-        updated_at: null,
-        position: 8,
-        video: {
-          id: "ce25ed7d-0718-439e-9324-0ea533c32f2a",
-          status: "ready",
-          asset_id: null,
-          playback_id: null,
-          passthrough: "kt2hy_ruWXeKGSc2xov2y",
-          duration: 10.066667,
-          upload_id: "NWSYIzFMM8Zyqz6qXu021ebIaJF01CFKR1CzxzbgqFCtU",
-          created_at: "2025-01-02T01:02:22.596786",
-          updated_at: null,
-        },
-        is_published: false,
-        poster_url:
-          "https://incrementatuconsulta.s3.us-west-1.amazonaws.com/iLRURO_nKO0cdc2BiL6Pf.webp",
-        slug: null,
-      },
-      {
-        id: "48bdde55-899c-4088-ae65-bcdae5f47226",
-        section_id: "ee5d1c95-199d-4eb9-9687-ac0175cde5c5",
-        title: "Test with new fucntion",
-        description: "New function. test",
-        content_type: "video/mp4",
-        created_at: "2025-01-02T02:41:42.528963",
-        updated_at: null,
-        position: 9,
-        video: {
-          id: "fe473903-fe98-4e90-9f52-e6a909749d1c",
-          status: "ready",
-          asset_id: "oIWNxeXam1csDyouy8cjxrRCM01xlDrVACKYs6hogZ01E",
-          playback_id: "01JQUdkjUxpbfvT2FP4R004rcGk01wiml016400n44WhGf028",
-          passthrough: "Ar8CrsLH8ajrxIf29U7EV",
-          duration: 10.066667,
-          upload_id: "hD2aRqkfxrG9lZ02PMwDgWY800D02l3IWzzsv8uDsmILz4",
-          created_at: "2025-01-02T02:41:42.354003",
-          updated_at: null,
-        },
-        is_published: false,
-        poster_url:
-          "https://incrementatuconsulta.s3.us-west-1.amazonaws.com/xjvDFwCalcHHvILuvHdx9.webp",
-        slug: null,
-      },
     ],
   },
   {
@@ -179,7 +115,7 @@ const values = [
     title: "Seccion Duper",
     created_at: "2024-12-25T08:58:54.244168",
     updated_at: null,
-    position: 2,
+    position: 1,
     lectures: [
       {
         id: "7b9a5dd9-c9d5-49bf-a695-86158c399360",
@@ -189,7 +125,7 @@ const values = [
         content_type: "video/mp4",
         created_at: "2025-01-02T01:12:50.533444",
         updated_at: null,
-        position: 3,
+        position: 0,
         video: {
           id: "79ec7923-3fda-4f5d-b195-d5e1e2fcb995",
           status: "ready",
@@ -215,57 +151,53 @@ const values = [
     title: "New Duper Section with nothing",
     created_at: "2025-01-07T00:19:08.383261",
     updated_at: null,
-    position: 3,
+    position: 2,
     lectures: [],
   },
 ];
 
-export type Id = string | number;
+const columnsData = initialValues.map((section) => ({
+  id: section.id,
+  title: section.title,
+  lectures: section.lectures,
+  position: section.position,
+  is_published: section.is_published,
+}));
+
+export type LectureC = {
+  id: string;
+  title: string;
+  position: number;
+  columnId?: string;
+};
 
 export type Column = {
-  id: Id;
+  id: string;
   title: string;
+  lectures: LectureC[];
+  position: number;
+  is_published: boolean;
 };
 
-export type Task = {
-  id: Id;
-  columnId: Id;
-  content: string;
-};
+const lecturesWithColumnId: LectureC[] = initialValues.flatMap((section) =>
+  section.lectures.map((lecture) => ({
+    ...lecture,
+    columnId: section.id,
+  }))
+);
 
-const initialTasks: Task[] = [
-  {
-    id: "1",
-    columnId: 1,
-    content: "Task 1",
-  },
-  {
-    id: "2",
-    columnId: 1,
-    content: "Task 2",
-  },
-  {
-    id: "3",
-    columnId: 1,
-    content: "Task 3",
-  },
-  {
-    id: "4",
-    columnId: 1,
-    content: "Task 4",
-  },
-];
+console.log(lecturesWithColumnId);
 
-const UserList = () => {
-  const [columns, setColumns] = useState<Column[]>(initialColumns);
+const SectionContainer = () => {
+  const [columns, setColumns] = useState<Column[]>(columnsData);
   const [activeColumn, setActiveColumn] = useState<Column | null>(null);
-  const [tasks, setTasks] = useState<Task[]>(initialTasks);
-  const [activeTask, setActiveTask] = useState<Task | null>(null);
+  const [lectures, setLectures] = useState<LectureC[]>(lecturesWithColumnId);
+  const [activeLecture, setActiveLecture] = useState<LectureC | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 100,
+        distance: 150,
       },
     })
   );
@@ -275,38 +207,31 @@ const UserList = () => {
     [columns]
   );
 
+  const updateLecturePosition = async (lectureId: string, position: number) => {
+    console.log("updateing lecture position", lectureId, position);
+    // const response = await fetch(`/api/lectures/${lectureId}/position`, {
+    //   method: 'PATCH',
+    //   headers: {
+    //     'Content-Type': 'application/json',
+    //   },
+    //   body: JSON.stringify({ position }),
+    // });
+    // if (!response.ok) {
+    //   throw new Error('Failed to update lecture position');
+    // }
+  };
+
   function handleDragStart(event: DragStartEvent) {
     if (event.active.data.current?.type === "Column") {
+      console.log("over a column", event.active.data.current?.column);
       setActiveColumn(event.active.data.current?.column);
       return;
     }
-
-    if (event.active.data.current?.type === "Task") {
-      setActiveTask(event.active.data.current?.task);
+    if (event.active.data.current?.type === "Lecture") {
+      console.log("over a lecture", event.active.data.current?.lecture);
+      setActiveLecture(event.active.data.current?.lectures);
       return;
     }
-  }
-
-  function onDragEndHandler(event: DragEndEvent) {
-    setActiveColumn(null);
-    setActiveTask(null);
-    const { active, over } = event;
-
-    if (!over) return;
-
-    const activeColumnId = active.id;
-    const overColumnId = over.id;
-
-    if (activeColumnId === overColumnId) {
-      return;
-    }
-
-    setColumns((columns) => {
-      const activeIndex = columns.findIndex((col) => col.id === activeColumnId);
-      const overIndex = columns.findIndex((col) => col.id === overColumnId);
-
-      return arrayMove(columns, activeIndex, overIndex);
-    });
   }
 
   function onDragOverHandler(event: DragOverEvent) {
@@ -320,36 +245,79 @@ const UserList = () => {
       return;
     }
 
-    //Im dropping a task over a task
+    //Im dropping a lecture over a lecture
 
-    const isActiveATask = active.data.current?.type === "Task";
-    const isOverATask = over.data.current?.type === "Task";
+    const isActiveLecture = active.data.current?.type === "Lecture";
+    const isOverALecture = over.data.current?.type === "Lecture";
 
-    if (!isActiveATask) return;
+    if (!isActiveLecture) return;
 
-    if (isActiveATask && isOverATask) {
-      setTasks((tasks) => {
+    if (isActiveLecture && isOverALecture) {
+      setLectures((tasks) => {
         const activeIndex = tasks.findIndex((task) => task.id === active.id);
         const overIndex = tasks.findIndex((task) => task.id === over.id);
 
         tasks[activeIndex].columnId = tasks[overIndex].columnId;
 
-        return arrayMove(tasks, activeIndex, overIndex);
+        const reorderedTasks = arrayMove(tasks, activeIndex, overIndex);
+
+        reorderedTasks.forEach((task, index) => {
+          updateLecturePosition(task.id, index).catch((error) => {
+            console.error("Failed to update lecture position:", error);
+          });
+        });
+
+        return reorderedTasks;
       });
     }
 
-    // Dropping a task over a column
+    // Dropping a lecture over a column
     const isOverAColumn = over.data.current?.type === "Column";
     if (isOverAColumn) {
-      setTasks((tasks) => {
-        const activeIndex = tasks.findIndex((task) => task.id === active.id);
-        const overIndex = tasks.findIndex((task) => task.id === over.id);
+      setLectures((lecture) => {
+        const activeIndex = lecture.findIndex((task) => task.id === active.id);
+        const overIndex = lecture.findIndex((task) => task.id === over.id);
 
-        tasks[activeIndex].columnId = over.id;
+        lecture[activeIndex].columnId = String(over.id);
 
-        return arrayMove(tasks, activeIndex, overIndex);
+        return arrayMove(lecture, activeIndex, overIndex);
       });
     }
+  }
+
+  function onDragEndHandler(event: DragEndEvent) {
+    setActiveColumn(null);
+    setActiveLecture(null);
+    const { active, over } = event;
+    if (!over) return;
+
+    const activeColumnId = active.id;
+    const overColumnId = over.id;
+
+    setColumns((columns) => {
+      const activeIndex = columns.findIndex((col) => col.id === activeColumnId);
+      const overIndex = columns.findIndex((col) => col.id === overColumnId);
+
+      const updatedColumns = arrayMove(columns, activeIndex, overIndex);
+
+      const updatedWithPositions = updatedColumns.map((col, index) => ({
+        ...col,
+        position: index,
+      }));
+
+      // Prepare the data for the database update
+      const updates = updatedWithPositions.map(({ id, position }) => ({
+        id,
+        position,
+      }));
+
+      // Update the database (pseudo-code)
+      //   updateDatabasePositions(updates).catch((error) => {
+      //     console.error("Failed to update positions:", error);
+      //   });
+
+      return updatedColumns;
+    });
   }
 
   return (
@@ -358,28 +326,28 @@ const UserList = () => {
       onDragStart={handleDragStart}
       onDragEnd={onDragEndHandler}
       onDragOver={onDragOverHandler}
+      modifiers={[restrictToVerticalAxis]}
     >
-      <div className="m-auto flex min-h-screen w-full items-center justify-center p-4">
-        <div className="flex gap-4 ">
-          <SortableContext items={columnIds}>
-            {columns.map((column) => (
-              <div key={column.id}>
-                <ColumnContainer
-                  column={column}
-                  tasks={tasks.filter((task) => task.columnId === column.id)}
-                />
-              </div>
-            ))}
-          </SortableContext>
-        </div>
+      <div className="flex flex-col space-y-4 p-4 ">
+        <SortableContext items={columnIds}>
+          {columns.map((column) => (
+            <div key={column.id}>
+              <SectionCard
+                column={column}
+                lectures={lectures.filter(
+                  (lect) => lect.columnId === column.id
+                )}
+              />
+            </div>
+          ))}
+        </SortableContext>
       </div>
       <DragOverlay>
-        {activeColumn && <ColumnContainer column={activeColumn} tasks={[]} />}
-        {activeTask && <TaskCard task={activeTask} />}
+        {activeColumn && <SectionCard column={activeColumn} lectures={[]} />}
+        {/* {activeTask && <TaskCard task={activeTask} />} */}
       </DragOverlay>
-      , document.body
     </DndContextWithNoSSR>
   );
 };
 
-export default UserList;
+export default SectionContainer;

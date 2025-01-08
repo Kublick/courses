@@ -40,6 +40,7 @@ import {
 } from "@/components/ui/collapsible";
 import LectureAction from "./lecture-action";
 import { Separator } from "@/components/ui/separator";
+import SectionContainer from "./section-container";
 
 interface Props {
   slug: string;
@@ -53,13 +54,13 @@ const Course = ({ slug }: Props) => {
   useEffect(() => {
     if (data?.sections) {
       const sortedSections = [...data.sections].sort(
-        (a, b) => (a.position || 0) - (b.position || 0),
+        (a, b) => (a.position || 0) - (b.position || 0)
       );
 
       const sectionsWithSortedLectures = sortedSections.map((section) => ({
         ...section,
         lectures: [...section.lectures].sort(
-          (a, b) => (a.position || 0) - (b.position || 0),
+          (a, b) => (a.position || 0) - (b.position || 0)
         ),
       }));
 
@@ -103,8 +104,14 @@ const Course = ({ slug }: Props) => {
             )}
           </CardFooter>
         </Card>
+        <SectionContainer sections={columns} />
       </div>
+
       <div className="p-4 space-y-8">
+        {/* {columns.map((section) => (
+          <CourseSectionItem section={section} key={section.id} />
+        ))} */}
+
         {columns.map((s) => (
           <div key={s.id}>
             <Collapsible open={isOpen} onOpenChange={setIsOpen}>
@@ -159,7 +166,6 @@ const Course = ({ slug }: Props) => {
                                 lectureId={l.id}
                                 is_published={l.is_published ?? false}
                               />
-                              {/* <HandleDeleteLecture lectureId={l.id} /> */}
                             </div>
                           </div>
                         </CardHeader>

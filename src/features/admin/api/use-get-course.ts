@@ -20,7 +20,9 @@ export const useGetCourse = (slug: string) => {
         throw new Error("No se pudo obtener los cursos");
       }
 
-      return response.json();
+      const data = await response.json();
+
+      return data;
     },
   });
 };

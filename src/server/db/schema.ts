@@ -48,8 +48,8 @@ export const users = pgTable("users", (t) => ({
   email: t.text().notNull().unique(),
   password_hash: t.text().notNull(),
   role: roleEnums("role").notNull().default("user"),
-  created_at: t.timestamp("created_at").defaultNow().notNull(),
-  updated_at: t.timestamp("updated_at"),
+  created_at: t.timestamp({ mode: "string" }).defaultNow().notNull(),
+  updated_at: t.timestamp({ mode: "string" }),
   name: t.text(),
   lastname: t.text(),
   phone: t.text(),
@@ -97,10 +97,8 @@ export const courses = pgTable("courses", {
   price: numericCasted({ precision: 10, scale: 2 }).notNull(),
   is_published: boolean().default(false),
   slug: text().notNull().unique(),
-  stripe_product_id: text(),
-  stripe_price_id: text(),
-  created_at: timestamp("created_at").defaultNow().notNull(),
-  updated_at: timestamp("updated_at"),
+  created_at: timestamp({ mode: "string" }).defaultNow().notNull(),
+  updated_at: timestamp({ mode: "string" }),
 });
 
 export type Course = InferSelectModel<typeof courses>;
@@ -120,8 +118,6 @@ export const insertCourseSchema = createInsertSchema(courses, {
       .min(0, { message: "El precio del curso debe ser mayor a 0" }),
 }).omit({
   id: true,
-  created_at: true,
-  updated_at: true,
   slug: true,
   is_published: true,
 });
@@ -149,9 +145,9 @@ export const sections = pgTable("sections", (t) => ({
     .references(() => courses.id),
   is_published: t.boolean().default(false),
   title: t.text().notNull(),
-  created_at: t.timestamp("created_at").defaultNow().notNull(),
-  updated_at: t.timestamp("updated_at"),
-  position: t.integer().default(1),
+  created_at: t.timestamp({ mode: "string" }).defaultNow().notNull(),
+  updated_at: t.timestamp({ mode: "string" }),
+  position: t.integer().default(1).notNull(),
 }));
 
 export type Section = InferSelectModel<typeof sections>;
@@ -189,9 +185,9 @@ export const lectures = pgTable("lectures", (t) => ({
   title: t.text().notNull(),
   description: t.text(),
   content_type: t.text(),
-  created_at: t.timestamp("created_at").defaultNow().notNull(),
-  updated_at: t.timestamp("updated_at"),
-  position: t.integer().default(1),
+  created_at: t.timestamp({ mode: "string" }).defaultNow().notNull(),
+  updated_at: t.timestamp({ mode: "string" }),
+  position: t.integer().default(1).notNull(),
   video: t.uuid().references(() => videos.id),
   is_published: t.boolean().default(false),
   poster_url: t.text(),
@@ -258,8 +254,8 @@ export const videos = pgTable("videos", (t) => ({
   passthrough: t.text(),
   duration: t.doublePrecision(),
   upload_id: t.text(),
-  created_at: t.timestamp("created_at").defaultNow().notNull(),
-  updated_at: t.timestamp("updated_at"),
+  created_at: t.timestamp({ mode: "string" }).defaultNow().notNull(),
+  updated_at: t.timestamp({ mode: "string" }),
 }));
 
 export const insertVideoSchema = createInsertSchema(videos, {
@@ -295,10 +291,16 @@ export const selectCourseSchemaWithLecturesAndSections = createSelectSchema(
 ).extend({
   sections: createSelectSchema(sections)
     .extend({
-      lectures: selectLectureSchemaWithVideo.array(), // Use extended schema with video relation
+      lectures: selectLectureSchemaWithVideo.array(),
     })
     .array(),
 });
+
+export const sectionWithLectureSchame = createSelectSchema(sections).extend({
+  lectures: selectLectureSchemaWithVideo.array(),
+});
+
+export type SectionWithLecturesType = z.infer<typeof sectionWithLectureSchame>;
 
 export type CourseWithSectionsAndLectures = InferSelectModel<typeof courses> & {
   sections: (InferSelectModel<typeof sections> & {
