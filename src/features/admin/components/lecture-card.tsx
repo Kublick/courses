@@ -4,6 +4,7 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { GripVertical } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import LectureAction from "./lecture-action";
 
 interface Props {
   lecture: LectureC;
@@ -32,6 +33,18 @@ const LectureCard = (props: Props) => {
     transition,
   };
 
+  if (isDragging) {
+    return (
+      <Card
+        ref={setNodeRef}
+        style={style}
+        className="bg-slate-100 h-[120px] border-2 opacity-80"
+      >
+        <CardHeader></CardHeader>
+      </Card>
+    );
+  }
+
   return (
     <div
       ref={setNodeRef}
@@ -42,15 +55,21 @@ const LectureCard = (props: Props) => {
     >
       <Card>
         <CardHeader>
-          <CardTitle>
-            <div className="flex items-center space-x-8">
-              <GripVertical size={20} className="cursor-grab" />
-              {lecture.title}
+          <div className="flex items-center justify-between space-x-8">
+            <div className="flex items-center space-x-2">
+              <GripVertical size={20} className="cursor-grab text-gray-500" />
+              <p> {lecture.title}</p>
             </div>
-          </CardTitle>
+            <div className="flex-end">
+              <LectureAction
+                lectureId={lecture.id}
+                is_published={lecture.is_published ?? false}
+              />
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
-          <p>Content</p>
+          <p>Titulo: {lecture.description}</p>
         </CardContent>
       </Card>
     </div>

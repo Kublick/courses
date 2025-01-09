@@ -1,14 +1,7 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import { useGetCourse } from "../api/use-get-course";
-import {
-  BookOpenText,
-  ChevronDown,
-  Loader2,
-  Plus,
-  Video,
-  X,
-} from "lucide-react";
+import { Loader2, Plus } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -28,18 +21,9 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { useCreateCourseSection } from "../api/use-create-course-section";
-import NewLecture from "./new-lecture";
-import { useDeleteLecture } from "../api/use-delete-lecture";
 import { Badge } from "@/components/ui/badge";
 import CourseActions from "./course-actions";
 
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
-import LectureAction from "./lecture-action";
-import { Separator } from "@/components/ui/separator";
 import SectionContainer from "./section-container";
 
 interface Props {
@@ -107,90 +91,6 @@ const Course = ({ slug }: Props) => {
         <SectionContainer sections={columns} />
       </div>
 
-      <div className="p-4 space-y-8">
-        {/* {columns.map((section) => (
-          <CourseSectionItem section={section} key={section.id} />
-        ))} */}
-
-        {columns.map((s) => (
-          <div key={s.id}>
-            <Collapsible open={isOpen} onOpenChange={setIsOpen}>
-              <Card>
-                <CardHeader>
-                  <div className="flex justify-between items-baseline ">
-                    <h2 className="text-lg font-semibold mb-4">
-                      Seccion: {s.title}
-                    </h2>
-
-                    <NewLecture
-                      section_id={s.id}
-                      lecturesLength={s.lectures.length}
-                    />
-                  </div>
-                  <div className="flex items-center space-x-2 text-muted-foreground">
-                    <p>{s.lectures.length} Lecciones</p>
-                    <BookOpenText className="h-4 w-4 " />
-                  </div>
-
-                  <div className="flex justify-end ">
-                    {s.is_published ? (
-                      <Badge variant="success">Publicado</Badge>
-                    ) : (
-                      <Badge variant="outline">En desarrollo</Badge>
-                    )}
-                  </div>
-                  <div className="py-4">
-                    <Separator />
-                  </div>
-                  <CollapsibleTrigger asChild>
-                    <Button variant="ghost" size="sm">
-                      <ChevronDown
-                        className={`h-4 w-4 transition-transform duration-300 ${
-                          isOpen ? "rotate-180" : "rotate-0"
-                        }`}
-                      />
-                      <span className="sr-only">Toggle</span>
-                    </Button>
-                  </CollapsibleTrigger>
-                </CardHeader>
-
-                <CollapsibleContent className="space-y-2">
-                  <CardContent className="space-y-4">
-                    {s.lectures.map((l) => (
-                      <Card key={l.id}>
-                        <CardHeader>
-                          <div className="flex justify-between items-center">
-                            <p>Nombre: {l.title}</p>
-                            <div className="flex gap-2 items-center">
-                              <LectureAction
-                                lectureId={l.id}
-                                is_published={l.is_published ?? false}
-                              />
-                            </div>
-                          </div>
-                        </CardHeader>
-                        <CardContent>
-                          <div className="flex gap-4 justify-between">
-                            <p>Descripcion: {l.description}</p>
-                            <p className="flex gap-2 items-center">
-                              Tipo:
-                              {l.content_type === "PDF" ? (
-                                "PDF"
-                              ) : (
-                                <Video className="h-4 w-4" />
-                              )}
-                            </p>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </CardContent>
-                </CollapsibleContent>
-              </Card>
-            </Collapsible>
-          </div>
-        ))}
-      </div>
       <pre>{JSON.stringify(columns, null, 2)}</pre>
     </div>
   );

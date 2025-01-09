@@ -18,10 +18,11 @@ import { Button } from "@/components/ui/button";
 interface Props {
   column: Column;
   lectures: LectureC[];
+  totalLectures: number;
 }
 
 const SectionCard = (props: Props) => {
-  const { column, lectures } = props;
+  const { column, lectures, totalLectures } = props;
   const [isOpen, setIsOpen] = useState(false);
 
   const lectureIds = useMemo(
@@ -49,12 +50,24 @@ const SectionCard = (props: Props) => {
     transition,
   };
 
+  if (isDragging) {
+    return (
+      <Card
+        ref={setNodeRef}
+        style={style}
+        className="bg-slate-100 h-[300px] border-2 opacity-80"
+      >
+        <CardHeader></CardHeader>
+      </Card>
+    );
+  }
+
   return (
     <div
       ref={setNodeRef}
       {...attributes}
       style={style}
-      className="flex flex-col space-y-4  "
+      className="flex flex-col space-y-4"
     >
       <Collapsible open={isOpen} onOpenChange={setIsOpen}>
         <Card>
@@ -70,22 +83,22 @@ const SectionCard = (props: Props) => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="flex justify-between items-baseline ">
+            <div className="flex justify-between items-baseline">
               <h2 className="text-lg font-semibold mb-4">
                 Seccion: {column.title}
               </h2>
 
               <NewLecture
                 section_id={column.id}
-                lecturesLength={column.lectures.length}
+                lecturesLength={totalLectures}
               />
             </div>
             <div className="flex items-center space-x-2 text-muted-foreground">
-              <p>{column.lectures.length} Lecciones</p>
-              <BookOpenText className="h-4 w-4 " />
+              <p>{lectures.length} Lecciones</p>
+              <BookOpenText className="h-4 w-4" />
             </div>
 
-            <div className="flex justify-end ">
+            <div className="flex justify-end">
               {column.is_published ? (
                 <Badge variant="success">Publicado</Badge>
               ) : (
