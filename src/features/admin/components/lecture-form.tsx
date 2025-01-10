@@ -15,6 +15,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import TipTapEditor from "./editor";
 
 const MAX_VIDEO_SIZE = 50 * 1024 * 1024; // 50MB
 const ACCEPTED_VIDEO_TYPES = [
@@ -77,7 +78,10 @@ const LectureForm = () => {
                 <FormItem>
                   <FormLabel>Username</FormLabel>
                   <FormControl>
-                    <Input placeholder="shadcn" {...field} />
+                    <TipTapEditor
+                      value={field.value}
+                      onChange={field.onChange}
+                    />
                   </FormControl>
 
                   <FormMessage />

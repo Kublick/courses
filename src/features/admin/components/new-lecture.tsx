@@ -17,6 +17,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import dynamic from "next/dynamic";
 import { Button } from "@/components/ui/button";
 import { ChevronDown } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -28,6 +29,8 @@ import { useCreateLecture } from "../api/use-create-lecture";
 import { toast } from "sonner";
 import { ImageDropzone } from "@/components/ui/image-dropzone";
 import { VideoDropzone } from "@/components/ui/video-dropzone";
+
+const TipTapEditor = dynamic(() => import("./editor"), { ssr: false });
 
 const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
 const MAX_THUMBNAIL_SIZE = 2 * 1024 * 1024; // 2MB
@@ -147,15 +150,20 @@ const NewLecture = ({ section_id, lecturesLength }: Props) => {
                   <FormField
                     control={form.control}
                     name="description"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Descripción</FormLabel>
-                        <FormControl>
-                          <Textarea placeholder="Descripción" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
+                    render={({ field }) => {
+                      return (
+                        <FormItem>
+                          <FormLabel>Descripción</FormLabel>
+                          <FormControl>
+                            <TipTapEditor
+                              value={field.value}
+                              onChange={field.onChange}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      );
+                    }}
                   />
 
                   <FormField
