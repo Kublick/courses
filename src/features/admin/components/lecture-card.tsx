@@ -8,9 +8,12 @@ import LectureAction from "./lecture-action";
 
 interface Props {
   lecture: LectureC;
+  enableDrag: boolean;
+  setEnableDrag: (enable: boolean) => void;
 }
 
 const LectureCard = (props: Props) => {
+  const { enableDrag, setEnableDrag } = props;
   const { lecture } = props;
 
   const {
@@ -46,18 +49,18 @@ const LectureCard = (props: Props) => {
   }
 
   return (
-    <div
-      ref={setNodeRef}
-      {...attributes}
-      {...listeners}
-      style={style}
-      className="py-4"
-    >
+    <div ref={setNodeRef} {...attributes} style={style} className="py-4">
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between space-x-8">
             <div className="flex items-center space-x-2">
-              <GripVertical size={20} className="cursor-grab text-gray-500" />
+              {enableDrag && (
+                <GripVertical
+                  size={20}
+                  className="cursor-grab text-gray-500"
+                  {...listeners}
+                />
+              )}
               <p> {lecture.title}</p>
             </div>
             <div className="flex-end">

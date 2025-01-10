@@ -33,7 +33,6 @@ interface Props {
 const Course = ({ slug }: Props) => {
   const { data, isLoading } = useGetCourse(slug);
   const [columns, setColumns] = useState(data?.sections || []);
-  const [isOpen, setIsOpen] = useState(false);
 
   useEffect(() => {
     if (data?.sections) {
@@ -88,6 +87,7 @@ const Course = ({ slug }: Props) => {
             )}
           </CardFooter>
         </Card>
+
         <SectionContainer sections={columns} />
       </div>
 

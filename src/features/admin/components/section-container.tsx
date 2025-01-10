@@ -15,6 +15,9 @@ import SectionCard from "./section-card";
 import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
 import EmptyLecture from "./empty-lecture";
 import { Lecture, SectionWithLecturesType } from "@/server/db/schema";
+import { Button } from "@/components/ui/button";
+import { useUpdateLecturePositions } from "../api/use-update-sections-positions";
+import { useUpdateSectionPosition } from "../api/use-update-lectures-positions";
 
 const DndContextWithNoSSR = dynamic(
   () => import("@dnd-kit/core").then((mod) => mod.DndContext),
@@ -40,10 +43,13 @@ interface Props {
 }
 
 const SectionContainer = (props: Props) => {
+  const [enableDrag, setEnableDrag] = useState(false);
   const [columns, setColumns] = useState<Column[]>([]);
   const [activeColumn, setActiveColumn] = useState<Column | null>(null);
   const [lectures, setLectures] = useState<LectureC[]>([]);
   const [activeLecture, setActiveLecture] = useState<LectureC | null>(null);
+  const updateLecturePosition = useUpdateLecturePositions();
+  const updateSectionsPosition = useUpdateSectionPosition();
 
   useEffect(() => {
     const columnsData = props.sections.map((section) => ({
@@ -78,18 +84,19 @@ const SectionContainer = (props: Props) => {
     [columns]
   );
 
-  const updateLecturePosition = async (lectureId: string, position: number) => {
-    console.log("updating lecture position", lectureId, position);
-    // const response = await fetch(`/api/lectures/${lectureId}/position`, {
-    //   method: 'PATCH',
-    //   headers: {
-    //     'Content-Type': 'application/json',
-    //   },
-    //   body: JSON.stringify({ position }),
-    // });
-    // if (!response.ok) {
-    //   throw new Error('Failed to update lecture position');
-    // }
+  const handleDragUpdate = () => {
+    const newLectures = lectures.map((l) => {
+      return {
+        id: l.id,
+        position: l.position,
+        sectionId: l.columnId,
+      };
+    });
+
+    updateLecturePosition.mutate(newLectures);
+    updateSectionsPosition.mutate(columns);
+
+    setEnableDrag(false);
   };
 
   function handleDragStart(event: DragStartEvent) {
@@ -143,9 +150,6 @@ const SectionContainer = (props: Props) => {
         columnLectures.forEach((lecture, index) => {
           const lectureIndex = reordered.findIndex((l) => l.id === lecture.id);
           reordered[lectureIndex] = { ...lecture, position: index };
-          updateLecturePosition(lecture.id, index).catch((error) => {
-            console.error("Failed to update lecture position:", error);
-          });
         });
 
         return reordered;
@@ -169,9 +173,6 @@ const SectionContainer = (props: Props) => {
             (l) => l.id === lecture.id
           );
           updatedLectures[lectureIndex] = { ...lecture, position: index };
-          updateLecturePosition(lecture.id, index).catch((error) => {
-            console.error("Failed to update lecture position:", error);
-          });
         });
 
         return updatedLectures;
@@ -217,6 +218,19 @@ const SectionContainer = (props: Props) => {
       modifiers={[restrictToVerticalAxis]}
     >
       <div className="flex flex-col space-y-4 p-4">
+        <div className="py-4 px-4 flex justify-end">
+          {!enableDrag ? (
+            <Button
+              variant="outline"
+              onClick={() => setEnableDrag((prev) => !prev)}
+            >
+              Ordenar
+            </Button>
+          ) : (
+            <Button onClick={handleDragUpdate}>Actualizar</Button>
+          )}
+        </div>
+
         <SortableContext items={columnIds}>
           {columns.map((column) => {
             const sectionLectures = getLecturesForSection(column.id);
@@ -226,6 +240,8 @@ const SectionContainer = (props: Props) => {
                   column={column}
                   lectures={sectionLectures}
                   totalLectures={sectionLectures.length}
+                  enableDrag={enableDrag}
+                  setEnableDrag={setEnableDrag}
                 />
               </div>
             );
@@ -234,7 +250,13 @@ const SectionContainer = (props: Props) => {
       </div>
       <DragOverlay>
         {activeColumn && (
-          <SectionCard column={activeColumn} lectures={[]} totalLectures={0} />
+          <SectionCard
+            column={activeColumn}
+            lectures={[]}
+            totalLectures={0}
+            enableDrag={enableDrag}
+            setEnableDrag={setEnableDrag}
+          />
         )}
         {activeLecture && <EmptyLecture />}
       </DragOverlay>

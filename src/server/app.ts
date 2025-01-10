@@ -6,6 +6,7 @@ import user from "./routes/users/users.index";
 import courses from "./routes/courses/courses.index";
 import lectures from "./routes/lectures/lectures.index";
 import webhooks from "./routes/webhooks/webhooks.index";
+import sections from "./routes/sections/sections.index";
 
 const app = createApp();
 
@@ -18,7 +19,8 @@ const routes = app
   .route("/", user)
   .route("/", courses)
   .route("/", lectures)
-  .route("/", webhooks);
+  .route("/", webhooks)
+  .route("/", sections);
 
 export type AppType = typeof routes;
 

@@ -204,6 +204,38 @@ export const publishLecture = createRoute({
   },
 });
 
+export const updateLecturePosition = createRoute({
+  tags: ["lectures"],
+  path: "/lectures/position",
+  method: "post",
+  request: {
+    body: jsonContentRequired(
+      z.array(
+        z.object({
+          id: z.string(),
+          position: z.number(),
+          sectionId: z.string(),
+        })
+      ),
+      "An array of lectures to update"
+    ),
+  },
+  responses: {
+    [HttpStatusCodes.OK]: jsonContent(
+      z.object({
+        message: z.string(),
+      }),
+      "The lecture was published"
+    ),
+    [HttpStatusCodes.NOT_FOUND]: jsonContent(
+      z.object({
+        message: z.string(),
+      }),
+      "The lecture was not found"
+    ),
+  },
+});
+
 export type LectureListRoute = typeof list;
 export type LectureByIdRoute = typeof getOneById;
 export type CreateLectureRoute = typeof create;
@@ -211,3 +243,4 @@ export type DeleteLectureByIdRoute = typeof deleteOneById;
 export type UpdateLectureByIdRoute = typeof updateOneById;
 export type UploadLectureVideo = typeof uploadVideo;
 export type PublishLectureRoute = typeof publishLecture;
+export type UpdateLecturePositionRoute = typeof updateLecturePosition;

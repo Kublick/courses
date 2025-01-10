@@ -19,9 +19,12 @@ interface Props {
   column: Column;
   lectures: LectureC[];
   totalLectures: number;
+  enableDrag: boolean;
+  setEnableDrag: (enable: boolean) => void;
 }
 
 const SectionCard = (props: Props) => {
+  const { enableDrag, setEnableDrag } = props;
   const { column, lectures, totalLectures } = props;
   const [isOpen, setIsOpen] = useState(false);
 
@@ -55,7 +58,7 @@ const SectionCard = (props: Props) => {
       <Card
         ref={setNodeRef}
         style={style}
-        className="bg-slate-100 h-[300px] border-2 opacity-80"
+        className="bg-rose-100 h-[300px] border-2 opacity-80"
       >
         <CardHeader></CardHeader>
       </Card>
@@ -74,11 +77,13 @@ const SectionCard = (props: Props) => {
           <CardHeader>
             <CardTitle>
               <div className="flex justify-end">
-                <GripVertical
-                  size={20}
-                  className="cursor-grab"
-                  {...listeners}
-                />
+                {enableDrag && (
+                  <GripVertical
+                    size={20}
+                    className="cursor-grab"
+                    {...listeners}
+                  />
+                )}
               </div>
             </CardTitle>
           </CardHeader>
@@ -122,7 +127,12 @@ const SectionCard = (props: Props) => {
             <CollapsibleContent className="space-y-2">
               <SortableContext items={lectureIds}>
                 {lectures.map((lecture) => (
-                  <LectureCard key={lecture.id} lecture={lecture} />
+                  <LectureCard
+                    key={lecture.id}
+                    lecture={lecture}
+                    enableDrag={enableDrag}
+                    setEnableDrag={setEnableDrag}
+                  />
                 ))}
               </SortableContext>
             </CollapsibleContent>

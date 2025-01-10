@@ -11,6 +11,7 @@ import {
   LectureListRoute,
   PublishLectureRoute,
   UpdateLectureByIdRoute,
+  UpdateLecturePositionRoute,
   UploadLectureVideo,
 } from "./lectures.route";
 import { eq } from "drizzle-orm";
@@ -212,4 +213,33 @@ export const publishLecture: AppRouteHandler<PublishLectureRoute> = async (
   }
 
   return c.json({ message: "Lecture published" }, HttpStatusCodes.OK);
+};
+export const updateLecturePosition: AppRouteHandler<
+  UpdateLecturePositionRoute
+> = async (c) => {
+  c.var.logger.info("updating lectures");
+
+  const items = c.req.valid("json");
+
+  for (const lecture of items) {
+    const { id, position, sectionId } = lecture;
+
+    try {
+      const updatedLecture = await db
+        .update(lectures)
+        .set({ position, section_id: sectionId })
+        .where(eq(lectures.id, id));
+
+      if (!updatedLecture) {
+        return c.json(
+          { message: "Lecture not found" },
+          HttpStatusCodes.NOT_FOUND
+        );
+      }
+    } catch (error) {
+      console.log("Error updating lecture position", error);
+    }
+  }
+
+  return c.json({ message: "Lecture updated" }, HttpStatusCodes.OK);
 };
