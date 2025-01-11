@@ -24,26 +24,27 @@ export const create: AppRouteHandler<CreateLectureRoute> = async (c) => {
   const { title, description, file, section_id, position, thumbnail } =
     c.req.valid("form");
 
-  const { url, passthrough, id } = await getMuxUrl();
-
-  const uploadResponse = await fetch(url, {
-    method: "PUT",
-    body: file,
-    headers: {
-      "Content-Type": file.type,
-    },
-  });
-
-  if (!uploadResponse.ok) {
-    throw new Error("Video upload to Mux failed");
-  }
+  let videoId = null; // Default to null if no video is uploaded
   let poster_url = null;
-  if (thumbnail) {
-    poster_url = await uploadThumbnail(thumbnail);
-  }
 
-  try {
-    const [videinsert] = await db
+  if (file) {
+    // Proceed with video upload to Mux
+    const { url, passthrough, id } = await getMuxUrl();
+
+    const uploadResponse = await fetch(url, {
+      method: "PUT",
+      body: file,
+      headers: {
+        "Content-Type": file.type,
+      },
+    });
+
+    if (!uploadResponse.ok) {
+      throw new Error("Video upload to Mux failed");
+    }
+
+    // Insert video metadata into the `videos` table
+    const [videoInsert] = await db
       .insert(videos)
       .values({
         status: "waiting",
@@ -52,22 +53,32 @@ export const create: AppRouteHandler<CreateLectureRoute> = async (c) => {
       })
       .returning();
 
+    videoId = videoInsert.id;
+  }
+
+  if (thumbnail) {
+    // Upload the thumbnail if provided
+    poster_url = await uploadThumbnail(thumbnail);
+  }
+
+  try {
+    // Insert the lecture into the database
     const [lecture] = await db
       .insert(lectures)
       .values({
         title,
         description,
         section_id,
-        content_type: file.type,
+        content_type: file?.type ?? null, // Use file type if a file exists
         position: Number(position),
-        video: videinsert.id,
+        video: videoId, // Nullable video ID
         poster_url: poster_url ?? null,
       })
       .returning();
 
     return c.json({ id: lecture.id }, HttpStatusCodes.OK);
   } catch (error) {
-    console.error("Error uploading video:", error);
+    console.error("Error creating lecture:", error);
     return c.json(
       {
         error: {
@@ -75,7 +86,7 @@ export const create: AppRouteHandler<CreateLectureRoute> = async (c) => {
             {
               code: "file_error",
               path: ["file"],
-              message: "Por favor, selecciona un archivo de video",
+              message: "An error occurred while processing the lecture",
             },
           ],
           name: "ValidationError",

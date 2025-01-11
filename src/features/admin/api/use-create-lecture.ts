@@ -8,10 +8,10 @@ export const useCreateLecture = () => {
     mutationFn: async (data: {
       title: string;
       description: string;
-      file: File;
+      file?: File;
       section_id: string;
       position: number;
-      thumbnail?: File;
+      thumbnail: File;
     }) => {
       const { title, description, file, section_id, position, thumbnail } =
         data;
@@ -38,6 +38,7 @@ export const useCreateLecture = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["lectures"] });
+      queryClient.invalidateQueries({ queryKey: ["courses"] });
     },
   });
 };

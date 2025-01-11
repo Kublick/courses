@@ -51,18 +51,46 @@ export const create = createRoute({
       content: {
         "multipart/form-data": {
           schema: z.object({
-            title: z.string(),
-            description: z.string(),
-            file: z.custom<File>((value) => value instanceof File, {
-              message: "Expected a valid File instance",
-            }),
-            section_id: z.string(),
-            position: z.string(),
-            thumbnail: z
-              .custom<File>((value) => value instanceof File, {
-                message: "Expected a valid File instance",
+            title: z.string().nonempty({ message: "Title is required" }),
+            description: z
+              .string()
+              .nonempty({ message: "Description is required" }),
+            section_id: z
+              .string()
+              .nonempty({ message: "Section ID is required" }),
+            position: z.string().nonempty({ message: "Position is required" }),
+            file: z
+              .custom<File>()
+              .superRefine((value, ctx) => {
+                const file = value;
+                if (!file) return true;
+                if (
+                  !["video/mp4", "video/webm"].includes(file.type) &&
+                  file.size > 1024 * 1024 * 2000
+                ) {
+                  ctx.addIssue({
+                    code: z.ZodIssueCode.custom,
+                    message:
+                      '"File must be a video (MP4/WEBM) and less than 2000MB',
+                  });
+                }
               })
-              .optional(),
+              .nullish(),
+
+            thumbnail: z.custom<File | null | undefined>(
+              (thumbnail) => {
+                if (!thumbnail === undefined) return true;
+                if (!(thumbnail instanceof File)) return false;
+                return (
+                  thumbnail.size <= 1024 * 1024 * 2 &&
+                  ["image/jpeg", "image/png"].includes(thumbnail.type)
+                );
+              },
+              {
+                message:
+                  "Thumbnail must be an image (JPEG/PNG) and less than 2MB",
+              }
+            ),
           }),
         },
       },

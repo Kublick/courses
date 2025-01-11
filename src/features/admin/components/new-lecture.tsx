@@ -24,7 +24,6 @@ import { Input } from "@/components/ui/input";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Textarea } from "@/components/ui/textarea";
 import { useCreateLecture } from "../api/use-create-lecture";
 import { toast } from "sonner";
 import { ImageDropzone } from "@/components/ui/image-dropzone";
@@ -58,7 +57,8 @@ export const lectureFormSchema = z.object({
     .refine((file) => ACCEPTED_VIDEO_TYPES.includes(file.type), {
       message:
         "Por favor, sube un archivo de video válido (mp4, mpeg, mov, avi, webm)",
-    }),
+    })
+    .optional(),
   thumbnail: z
     .instanceof(File)
     .refine((file) => file !== undefined, {
@@ -70,8 +70,7 @@ export const lectureFormSchema = z.object({
     .refine((file) => ACCEPTED_THUMBNAIL_TYPES.includes(file.type), {
       message:
         "Por favor, sube un archivo de video válido (mp4, mpeg, mov, avi, webm)",
-    })
-    .optional(),
+    }),
 });
 
 interface Props {
@@ -173,7 +172,14 @@ const NewLecture = ({ section_id, lecturesLength }: Props) => {
                       <FormItem>
                         <FormLabel>Archivo</FormLabel>
                         <FormControl>
-                          <VideoDropzone field={field} />
+                          <VideoDropzone
+                            field={{
+                              ...field,
+                              value: field.value || null,
+                              onChange: (file: File | null) =>
+                                field.onChange(file),
+                            }}
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>

@@ -71,9 +71,7 @@ const LectureCard = (props: Props) => {
             </div>
           </div>
         </CardHeader>
-        <CardContent>
-          <p>Titulo: {lecture.description}</p>
-        </CardContent>
+        <CardContent></CardContent>
       </Card>
     </div>
   );
