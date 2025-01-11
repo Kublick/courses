@@ -11,7 +11,7 @@ export const useCreateLecture = () => {
       file?: File;
       section_id: string;
       position: number;
-      thumbnail: File;
+      thumbnail?: File;
     }) => {
       const { title, description, file, section_id, position, thumbnail } =
         data;

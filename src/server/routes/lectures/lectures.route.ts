@@ -76,21 +76,27 @@ export const create = createRoute({
                 }
               })
               .nullish(),
-
-            thumbnail: z.custom<File | null | undefined>(
-              (thumbnail) => {
-                if (!thumbnail === undefined) return true;
-                if (!(thumbnail instanceof File)) return false;
-                return (
-                  thumbnail.size <= 1024 * 1024 * 2 &&
-                  ["image/jpeg", "image/png"].includes(thumbnail.type)
-                );
-              },
-              {
-                message:
-                  "Thumbnail must be an image (JPEG/PNG) and less than 2MB",
-              }
-            ),
+            thumbnail: z
+              .custom<File>()
+              .superRefine((value, ctx) => {
+                const file = value;
+                if (!file) return true;
+                if (
+                  ![
+                    "image/jpeg",
+                    "image/jpg",
+                    "image/png",
+                    "image/webp",
+                  ].includes(file.type) &&
+                  file.size > 1024 * 1024 * 2
+                ) {
+                  ctx.addIssue({
+                    code: z.ZodIssueCode.custom,
+                    message: '"File must be a valid Image and less than 2MB',
+                  });
+                }
+              })
+              .nullish(),
           }),
         },
       },

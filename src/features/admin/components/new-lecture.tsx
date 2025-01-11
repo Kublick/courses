@@ -70,7 +70,8 @@ export const lectureFormSchema = z.object({
     .refine((file) => ACCEPTED_THUMBNAIL_TYPES.includes(file.type), {
       message:
         "Por favor, sube un archivo de video válido (mp4, mpeg, mov, avi, webm)",
-    }),
+    })
+    .optional(),
 });
 
 interface Props {

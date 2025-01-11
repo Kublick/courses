@@ -24,8 +24,8 @@ export const create: AppRouteHandler<CreateLectureRoute> = async (c) => {
   const { title, description, file, section_id, position, thumbnail } =
     c.req.valid("form");
 
-  let videoId = null; // Default to null if no video is uploaded
-  let poster_url = null;
+  let videoId = null;
+  let poster_url = "";
 
   if (file) {
     // Proceed with video upload to Mux
@@ -56,11 +56,9 @@ export const create: AppRouteHandler<CreateLectureRoute> = async (c) => {
     videoId = videoInsert.id;
   }
 
-  if (thumbnail) {
-    // Upload the thumbnail if provided
+  if (thumbnail instanceof File) {
     poster_url = await uploadThumbnail(thumbnail);
   }
-
   try {
     // Insert the lecture into the database
     const [lecture] = await db
@@ -69,10 +67,10 @@ export const create: AppRouteHandler<CreateLectureRoute> = async (c) => {
         title,
         description,
         section_id,
-        content_type: file?.type ?? null, // Use file type if a file exists
+        content_type: file?.type ?? null,
         position: Number(position),
-        video: videoId, // Nullable video ID
-        poster_url: poster_url ?? null,
+        video: videoId,
+        poster_url: poster_url,
       })
       .returning();
 

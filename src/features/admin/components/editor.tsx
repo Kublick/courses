@@ -178,16 +178,14 @@ const MenuBar: React.FC<MenuBarProps> = ({ editor }) => {
 };
 
 interface EditorProps {
-  value?: string;
+  value?: string | null;
   onChange?: (html: string) => void;
 }
 
 const TipTapEditor: React.FC<EditorProps> = ({ onChange, value }) => {
-  const [editorLoaded, setEditorLoaded] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
 
-  useEffect(() => {
-    setEditorLoaded(true);
-  }, []);
+  console.log("value", value);
 
   const editor = useEditor({
     immediatelyRender: false,
@@ -204,9 +202,10 @@ const TipTapEditor: React.FC<EditorProps> = ({ onChange, value }) => {
       Blockquote,
       BulletList,
     ],
-    content: value,
+    content: value || "",
     onUpdate: ({ editor }) => {
-      onChange?.(editor.getHTML());
+      const updatedContent = editor.getHTML();
+      onChange && onChange(updatedContent);
     },
     editorProps: {
       attributes: {
@@ -216,7 +215,19 @@ const TipTapEditor: React.FC<EditorProps> = ({ onChange, value }) => {
     },
   });
 
-  if (!editorLoaded) {
+  // Handle content updates when value prop changes
+  useEffect(() => {
+    if (editor && value !== undefined && value !== editor.getHTML()) {
+      editor.commands.setContent(value || "", false);
+    }
+  }, [value, editor]);
+
+  // Handle hydration
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  if (!isMounted) {
     return null;
   }
 

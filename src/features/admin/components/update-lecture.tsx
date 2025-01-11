@@ -19,6 +19,7 @@ import VideoPlayer from "@/components/ui/mux-video";
 import Image from "next/image";
 import { Separator } from "@/components/ui/separator";
 import { Loader2 } from "lucide-react";
+import TipTapEditor from "./editor";
 interface Props {
   id: string;
 }
@@ -31,9 +32,6 @@ const UpdateLecture = ({ id }: Props) => {
     defaultValues: {
       title: "",
       description: "",
-      content_type: "",
-      position: null,
-      section_id: null,
     },
     values: data,
   });
@@ -79,10 +77,9 @@ const UpdateLecture = ({ id }: Props) => {
                 <FormItem>
                   <FormLabel>Descripción</FormLabel>
                   <FormControl>
-                    <Input
-                      placeholder="Descripción"
-                      {...field}
-                      value={field.value ?? ""}
+                    <TipTapEditor
+                      value={field.value || ""}
+                      onChange={field.onChange}
                     />
                   </FormControl>
                   <FormMessage />
@@ -108,23 +105,27 @@ const UpdateLecture = ({ id }: Props) => {
                 <CardContent>
                   <Separator />
 
-                  {data?.video?.playback_id && (
+                  {data?.video && (
                     <div className="grid grid-cols-3 gap-4">
                       <div className="col-span-2">
                         <div className="mt-4">
-                          <VideoPlayer
-                            playbackId={data.video.playback_id}
-                            posterUrl={data.poster_url ?? ""}
-                          />
+                          {data?.video.playback_id ? (
+                            <VideoPlayer
+                              playbackId={data.video.playback_id}
+                              posterUrl={data.poster_url ?? ""}
+                            />
+                          ) : (
+                            <p>No Video</p>
+                          )}
                         </div>
                       </div>
                       <div className="mt-4 text-xs">
-                        <p>Miniatura del video</p>
+                        <p>Miniatura</p>
                         <Image
-                          src={`https://image.mux.com/${data.video.playback_id}/thumbnail.png?time=2&height=121&width=214`}
-                          alt={`Thumbnail de la sección ${data?.title}`}
-                          width={320}
-                          height={320}
+                          src={data.poster_url ?? ""}
+                          width={240}
+                          height={240}
+                          alt={data.title}
                         />
                       </div>
                     </div>
