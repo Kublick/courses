@@ -88,7 +88,7 @@ const Course = ({ slug }: Props) => {
           </CardFooter>
         </Card>
 
-        <SectionContainer sections={columns} />
+        <SectionContainer sections={columns} slug={slug} />
       </div>
 
       <pre>{JSON.stringify(columns, null, 2)}</pre>

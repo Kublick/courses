@@ -14,6 +14,7 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { Button } from "@/components/ui/button";
+import Link from "next/link";
 
 interface Props {
   column: Column;
@@ -21,6 +22,7 @@ interface Props {
   totalLectures: number;
   enableDrag: boolean;
   setEnableDrag: (enable: boolean) => void;
+  slug: string;
 }
 
 const SectionCard = (props: Props) => {
@@ -92,11 +94,13 @@ const SectionCard = (props: Props) => {
               <h2 className="text-lg font-semibold mb-4">
                 Seccion: {column.title}
               </h2>
-
-              <NewLecture
-                section_id={column.id}
-                lecturesLength={totalLectures}
-              />
+              <Link
+                href={`/admin/cursos/${props.slug}/${column.id}/lectura?numero=${props.totalLectures}`}
+              >
+                <Button>
+                  Añadir <ChevronDown className="h-6 w-6" />
+                </Button>
+              </Link>
             </div>
             <div className="flex items-center space-x-2 text-muted-foreground">
               <p>{lectures.length} Lecciones</p>

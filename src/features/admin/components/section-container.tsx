@@ -40,6 +40,7 @@ export type LectureC = Pick<
 
 interface Props {
   sections: SectionWithLecturesType[];
+  slug: string;
 }
 
 const SectionContainer = (props: Props) => {
@@ -242,6 +243,7 @@ const SectionContainer = (props: Props) => {
                   totalLectures={sectionLectures.length}
                   enableDrag={enableDrag}
                   setEnableDrag={setEnableDrag}
+                  slug={props.slug}
                 />
               </div>
             );
@@ -256,6 +258,7 @@ const SectionContainer = (props: Props) => {
             totalLectures={0}
             enableDrag={enableDrag}
             setEnableDrag={setEnableDrag}
+            slug={props.slug}
           />
         )}
         {activeLecture && <EmptyLecture />}
