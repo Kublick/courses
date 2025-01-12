@@ -16,7 +16,7 @@ import {
 } from "./lectures.route";
 import { eq } from "drizzle-orm";
 import { deleteVideo, getMuxUrl } from "@/server/lib/mux";
-import { deleteThumbanil, uploadThumbnail } from "@/lib/s3Actions";
+import { uploadThumbnail } from "@/lib/s3Actions";
 import { deleteLecture } from "../sections/sections.handlers";
 
 export const create: AppRouteHandler<CreateLectureRoute> = async (c) => {

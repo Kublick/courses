@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/collapsible";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import SectionActions from "./section-actions";
 
 interface Props {
   column: Column;
@@ -27,7 +28,7 @@ interface Props {
 
 const SectionCard = (props: Props) => {
   const { enableDrag, setEnableDrag } = props;
-  const { column, lectures, totalLectures } = props;
+  const { column, lectures } = props;
   const [isOpen, setIsOpen] = useState(false);
 
   const lectureIds = useMemo(
@@ -94,13 +95,20 @@ const SectionCard = (props: Props) => {
               <h2 className="text-lg font-semibold mb-4">
                 Seccion: {column.title}
               </h2>
-              <Link
-                href={`/admin/cursos/${props.slug}/${column.id}/lectura?numero=${props.totalLectures}`}
-              >
-                <Button>
-                  Añadir <ChevronDown className="h-6 w-6" />
-                </Button>
-              </Link>
+              <div className="flex items-center space-x-2">
+                <Link
+                  href={`/admin/cursos/${props.slug}/${column.id}/lectura?numero=${props.totalLectures}`}
+                >
+                  <Button>
+                    Añadir <ChevronDown className="h-6 w-6" />
+                  </Button>
+                </Link>
+                <SectionActions
+                  sectionId={column.id}
+                  is_published={column.is_published || false}
+                  title={column.title}
+                />
+              </div>
             </div>
             <div className="flex items-center space-x-2 text-muted-foreground">
               <p>{lectures.length} Lecciones</p>

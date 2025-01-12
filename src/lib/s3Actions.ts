@@ -30,7 +30,7 @@ const s3 = new S3Client({
 export async function getSignedURL(
   fileType: string = "webp",
   contentType: string = "image/webp",
-  expiresIn: number = 60,
+  expiresIn: number = 60
 ): Promise<SignedURLResponse> {
   try {
     if (!bucketName || !region) {
@@ -104,14 +104,14 @@ export const uploadThumbnail = async (file: File) => {
   return fileUrl;
 };
 
-export const deleteThumbanil = async (url: string) => {
+export const deleteThumbnail = async (url: string) => {
   const fileName = url.split("/").pop();
 
   const data = await s3.send(
     new DeleteObjectCommand({
       Bucket: bucketName,
       Key: fileName,
-    }),
+    })
   );
   console.log("delete thumbnail", data);
   return data;

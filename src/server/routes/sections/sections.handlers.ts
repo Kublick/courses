@@ -1,14 +1,39 @@
 import { AppRouteHandler } from "@/server/types";
-import { DeleteSectionById, UpdateSectionPosition } from "./sections.route";
+import {
+  DeleteSectionById,
+  UpdateOneById,
+  UpdateSectionPosition,
+} from "./sections.route";
 import db from "@/server/db";
 import { courses, sections } from "@/server/db/schema";
 import { eq } from "drizzle-orm";
 import * as HttpStatusCodes from "stoker/http-status-codes";
 import { lectures } from "../../db/schema";
 import { deleteVideo } from "@/server/lib/mux";
-import { deleteThumbanil } from "@/lib/s3Actions";
+import { deleteThumbnail } from "@/lib/s3Actions";
 
-export const updateLecturePosition: AppRouteHandler<
+export const updateOneById: AppRouteHandler<UpdateOneById> = async (c) => {
+  c.var.logger.info("updating section positions");
+  const { id } = c.req.valid("param");
+  const { title } = c.req.valid("json");
+
+  try {
+    const updatedSection = await db
+      .update(sections)
+      .set({ title })
+      .where(eq(sections.id, id));
+
+    if (!updatedSection) {
+      return c.json({ message: "No Section found" }, HttpStatusCodes.NOT_FOUND);
+    }
+  } catch (error) {
+    console.log("Error updating lecture position", error);
+  }
+
+  return c.json({ message: "Section updated" }, HttpStatusCodes.OK);
+};
+
+export const updateSectionPosition: AppRouteHandler<
   UpdateSectionPosition
 > = async (c) => {
   c.var.logger.info("updating section positions");
@@ -35,7 +60,7 @@ export const updateLecturePosition: AppRouteHandler<
     }
   }
 
-  return c.json({ message: "Lecture updated" }, HttpStatusCodes.OK);
+  return c.json({ message: "Section position updated" }, HttpStatusCodes.OK);
 };
 
 export const deleteSectionById: AppRouteHandler<DeleteSectionById> = async (
@@ -92,7 +117,7 @@ export async function deleteLecture(lectureId: string) {
   }
 
   if (lecture.poster_url) {
-    await deleteThumbanil(lecture.poster_url);
+    await deleteThumbnail(lecture.poster_url);
   }
 
   await db.delete(lectures).where(eq(lectures.id, lectureId));
