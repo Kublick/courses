@@ -17,6 +17,7 @@ import {
 import { eq } from "drizzle-orm";
 import { deleteVideo, getMuxUrl } from "@/server/lib/mux";
 import { deleteThumbanil, uploadThumbnail } from "@/lib/s3Actions";
+import { deleteLecture } from "../sections/sections.handlers";
 
 export const create: AppRouteHandler<CreateLectureRoute> = async (c) => {
   c.var.logger.info("Creating lecture");
@@ -91,7 +92,7 @@ export const create: AppRouteHandler<CreateLectureRoute> = async (c) => {
         },
         success: false,
       },
-      HttpStatusCodes.UNPROCESSABLE_ENTITY,
+      HttpStatusCodes.UNPROCESSABLE_ENTITY
     );
   }
 };
@@ -122,44 +123,28 @@ export const getOneById: AppRouteHandler<LectureByIdRoute> = async (c) => {
 
   return c.json(
     { ...lecture, video: lecture.video ?? undefined },
-    HttpStatusCodes.OK,
+    HttpStatusCodes.OK
   );
 };
 
 export const deleteById: AppRouteHandler<DeleteLectureByIdRoute> = async (
-  c,
+  c
 ) => {
-  c.var.logger.info("Deleting Lecture");
+  c.var.logger.info("Handling deleteById request");
 
-  const getLecture = await db.query.lectures.findFirst({
-    where: eq(lectures.id, c.req.param("id")),
-    with: {
-      video: true,
-    },
-  });
+  const lectureId = c.req.param("id");
 
-  const assetId = getLecture?.video?.asset_id;
-  if (assetId) {
-    await deleteVideo(assetId);
+  const result = await deleteLecture(lectureId);
+
+  if (!result.success) {
+    return c.json({ message: result.message }, HttpStatusCodes.NOT_FOUND);
   }
 
-  if (getLecture?.poster_url) {
-    await deleteThumbanil(getLecture.poster_url);
-  }
-
-  const lecture = await db
-    .delete(lectures)
-    .where(eq(lectures.id, c.req.param("id")));
-
-  if (!lecture) {
-    return c.json({ message: "Lecture not found" }, HttpStatusCodes.NOT_FOUND);
-  }
-
-  return c.json({ message: "Lecture deleted" }, HttpStatusCodes.OK);
+  return c.json({ message: result.message }, HttpStatusCodes.OK);
 };
 
 export const updateOneById: AppRouteHandler<UpdateLectureByIdRoute> = async (
-  c,
+  c
 ) => {
   c.var.logger.info("Updating lecture");
 
@@ -194,7 +179,7 @@ export const uploadVideo: AppRouteHandler<UploadLectureVideo> = async (c) => {
   if (!file) {
     return c.json(
       { message: "File is required" },
-      HttpStatusCodes.UNPROCESSABLE_ENTITY,
+      HttpStatusCodes.UNPROCESSABLE_ENTITY
     );
   }
   try {
@@ -213,13 +198,13 @@ export const uploadVideo: AppRouteHandler<UploadLectureVideo> = async (c) => {
     console.error("Error uploading video:", error);
     return c.json(
       { message: "Por favor, selecciona un archivo de video" },
-      HttpStatusCodes.UNPROCESSABLE_ENTITY,
+      HttpStatusCodes.UNPROCESSABLE_ENTITY
     );
   }
 };
 
 export const publishLecture: AppRouteHandler<PublishLectureRoute> = async (
-  c,
+  c
 ) => {
   c.var.logger.info("Publishing lecture");
 
@@ -258,7 +243,7 @@ export const updateLecturePosition: AppRouteHandler<
       if (!updatedLecture) {
         return c.json(
           { message: "Lecture not found" },
-          HttpStatusCodes.NOT_FOUND,
+          HttpStatusCodes.NOT_FOUND
         );
       }
     } catch (error) {

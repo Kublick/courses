@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { selectLectureSchemaWithVideo } from "@/server/db/schema";
+
 import {
   FormControl,
   FormMessage,
@@ -20,21 +20,76 @@ import Image from "next/image";
 import { Separator } from "@/components/ui/separator";
 import { Loader2 } from "lucide-react";
 import TipTapEditor from "./editor";
+import { VideoDropzone } from "@/components/ui/video-dropzone";
+import { ImageDropzone } from "@/components/ui/image-dropzone";
+import { useEffect } from "react";
 interface Props {
   id: string;
 }
 
+const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
+const MAX_THUMBNAIL_SIZE = 2 * 1024 * 1024; // 2MB
+const ACCEPTED_VIDEO_TYPES = [
+  "video/mp4",
+  "video/mpeg",
+  "video/quicktime",
+  "video/x-msvideo",
+  "video/webm",
+];
+
+const ACCEPTED_THUMBNAIL_TYPES = ["image/jpeg", "image/png", "image/gif"];
+
+const UpdateLectureSchema = z.object({
+  title: z.string().min(1),
+  description: z.string().min(1),
+  file: z
+    .instanceof(File)
+    .refine((file) => file !== undefined, {
+      message: "Por favor, selecciona un archivo de video",
+    })
+    .refine((file) => file.size <= MAX_FILE_SIZE, {
+      message: "El archivo debe ser de 50MB o menos",
+    })
+    .refine((file) => ACCEPTED_VIDEO_TYPES.includes(file.type), {
+      message:
+        "Por favor, sube un archivo de video válido (mp4, mpeg, mov, avi, webm)",
+    })
+    .optional(),
+  thumbnail: z
+    .instanceof(File)
+    .refine((file) => file !== undefined, {
+      message: "Por favor, selecciona un archivo de video",
+    })
+    .refine((file) => file.size < MAX_THUMBNAIL_SIZE, {
+      message: "El archivo debe ser de 50MB o menos",
+    })
+    .refine((file) => ACCEPTED_THUMBNAIL_TYPES.includes(file.type), {
+      message:
+        "Por favor, sube un archivo de video válido (mp4, mpeg, mov, avi, webm)",
+    })
+    .optional(),
+  poster_url: z.string().nullish(),
+});
+
 const UpdateLecture = ({ id }: Props) => {
   const { data, isLoading } = useGetLecture(id);
 
-  const form = useForm<z.infer<typeof selectLectureSchemaWithVideo>>({
-    resolver: zodResolver(selectLectureSchemaWithVideo),
+  const form = useForm<z.infer<typeof UpdateLectureSchema>>({
+    resolver: zodResolver(UpdateLectureSchema),
     defaultValues: {
       title: "",
       description: "",
     },
-    values: data,
   });
+
+  useEffect(() => {
+    if (data) {
+      form.reset({
+        title: data.title,
+        description: data.description ?? "",
+      });
+    }
+  }, [data]);
 
   if (isLoading) {
     return (
@@ -115,18 +170,53 @@ const UpdateLecture = ({ id }: Props) => {
                               posterUrl={data.poster_url ?? ""}
                             />
                           ) : (
-                            <p>No Video</p>
+                            <FormField
+                              control={form.control}
+                              name="file"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Archivo</FormLabel>
+                                  <FormControl>
+                                    <VideoDropzone
+                                      field={{
+                                        ...field,
+                                        value: field.value || null,
+                                        onChange: (file: File | null) =>
+                                          field.onChange(file),
+                                      }}
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
                           )}
                         </div>
                       </div>
                       <div className="mt-4 text-xs">
                         <p>Miniatura</p>
-                        <Image
-                          src={data.poster_url ?? ""}
-                          width={240}
-                          height={240}
-                          alt={data.title}
-                        />
+                        {data?.poster_url ? (
+                          <Image
+                            src={data.poster_url ?? ""}
+                            width={240}
+                            height={240}
+                            alt={data.title}
+                          />
+                        ) : (
+                          <FormField
+                            control={form.control}
+                            name="thumbnail"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Miniatura</FormLabel>
+                                <FormControl>
+                                  <ImageDropzone field={field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        )}
                       </div>
                     </div>
                   )}

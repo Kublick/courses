@@ -185,8 +185,6 @@ interface EditorProps {
 const TipTapEditor: React.FC<EditorProps> = ({ onChange, value }) => {
   const [isMounted, setIsMounted] = useState(false);
 
-  console.log("value", value);
-
   const editor = useEditor({
     immediatelyRender: false,
     extensions: [
