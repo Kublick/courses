@@ -3,7 +3,7 @@ import React from "react";
 
 interface LecturaPageProps {
   params: Promise<{
-    slug: string; // Changed from 'curso' to match the folder structure
+    slug: string;
     id: string;
   }>;
   searchParams: Promise<{

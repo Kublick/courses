@@ -8,6 +8,7 @@ export const MuxWebhookEventSchema = z.object({
     "video.live_stream.ended",
     "video.upload.asset_created",
     "video.upload.created",
+    "video.asset.deleted",
   ]),
   data: z.object({
     id: z.string(),
@@ -18,7 +19,7 @@ export const MuxWebhookEventSchema = z.object({
         z.object({
           policy: z.string(),
           id: z.string(),
-        })
+        }),
       )
       .optional(),
     duration: z.number().optional(),

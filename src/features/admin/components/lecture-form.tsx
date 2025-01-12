@@ -20,6 +20,8 @@ import { ImageDropzone } from "@/components/ui/image-dropzone";
 import { VideoDropzone } from "@/components/ui/video-dropzone";
 import { useRouter } from "next/navigation";
 import { Checkbox } from "@/components/ui/checkbox";
+import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 
 const TipTapEditor = dynamic(() => import("./editor"), { ssr: false });
 
@@ -93,7 +95,7 @@ const LectureForm = ({ section_id, lecturesLength, slug }: Props) => {
     try {
       const position = lecturesLength + 1;
 
-      const newLecture = await createLecture.mutateAsync({
+      createLecture.mutate({
         title: values.title,
         description: values.description ?? "",
         section_id: section_id,
@@ -125,7 +127,14 @@ const LectureForm = ({ section_id, lecturesLength, slug }: Props) => {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)}>
-        <h1>Crear Nueva Lección</h1>
+        <Link
+          href={`/admin/cursos/${slug}`}
+          className="text-sm flex items-center space-x-2"
+        >
+          <ArrowLeft className="w-4 h-4 " />
+          <p className="text-black hover:underline">Regresar</p>
+        </Link>
+        <h1 className="text-2xl font-bold pt-4">Crear Nueva Lección</h1>
 
         <div className="space-y-6">
           <FormField
@@ -200,7 +209,7 @@ const LectureForm = ({ section_id, lecturesLength, slug }: Props) => {
               htmlFor="newform"
               className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
             >
-              Agregar una leccion
+              Agregar una lección en esta sección
             </label>
             <Checkbox
               id="newform"

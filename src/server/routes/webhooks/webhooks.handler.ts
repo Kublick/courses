@@ -19,11 +19,11 @@ export const muxWebHook: AppRouteHandler<MuxWebHookRoute> = async (c) => {
     mux.webhooks.verifySignature(
       rawBody,
       headers,
-      process.env.MUX_WEBHOOK_SECRET!
+      process.env.MUX_WEBHOOK_SECRET!,
     );
 
     const { type, data } = MuxWebhookEventSchema.parse(JSON.parse(rawBody));
-
+    console.log("webhook type", type, data);
     switch (type) {
       case "video.upload.created":
         console.log("video.upload.created");
@@ -43,6 +43,9 @@ export const muxWebHook: AppRouteHandler<MuxWebHookRoute> = async (c) => {
       case "video.live_stream.ended":
         await handleLiveStreamEnded(data);
         break;
+      case "video.asset.deleted":
+        await handleAssetDeleted(data);
+        break;
       default:
         logger.warn("Unhandled event type:", JSON.stringify(type));
     }
@@ -54,7 +57,7 @@ export const muxWebHook: AppRouteHandler<MuxWebHookRoute> = async (c) => {
 };
 
 async function handleAssetCreated(
-  data: z.infer<typeof MuxWebhookEventSchema>["data"]
+  data: z.infer<typeof MuxWebhookEventSchema>["data"],
 ) {
   const { id, status, passthrough } = data;
 
@@ -84,7 +87,7 @@ async function handleAssetCreated(
 }
 
 async function handleAssetReady(
-  data: z.infer<typeof MuxWebhookEventSchema>["data"]
+  data: z.infer<typeof MuxWebhookEventSchema>["data"],
 ) {
   const { status, passthrough, duration } = data;
 
@@ -114,13 +117,33 @@ async function handleAssetReady(
 }
 
 async function handleLiveStreamStarted(
-  data: z.infer<typeof MuxWebhookEventSchema>["data"]
+  data: z.infer<typeof MuxWebhookEventSchema>["data"],
 ) {
   console.log("Live stream started:", data);
 }
 
 async function handleLiveStreamEnded(
-  data: z.infer<typeof MuxWebhookEventSchema>["data"]
+  data: z.infer<typeof MuxWebhookEventSchema>["data"],
 ) {
   console.log("Live stream ended:", data);
+}
+
+async function handleAssetDeleted(
+  data: z.infer<typeof MuxWebhookEventSchema>["data"],
+) {
+  const { passthrough } = data;
+
+  if (!passthrough) {
+    return;
+  }
+
+  const video = await db.query.videos.findFirst({
+    where: (videos, { eq }) => eq(videos.passthrough, passthrough),
+  });
+
+  console.log("video", video);
+
+  await db.delete(videos).where(eq(videos.passthrough, passthrough));
+
+  console.log("Asset deleted:", data);
 }

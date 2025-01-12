@@ -19,11 +19,6 @@ export const getMuxUrl = async () => {
     },
   });
 
-  console.log(
-    "🚀 ~ createUploadUrl:AppRouteHandler<UploadLectureVideo>= ~ uploadUrl:",
-    uploadUrl,
-  );
-
   const { url, id } = uploadUrl;
 
   return {
@@ -31,4 +26,9 @@ export const getMuxUrl = async () => {
     url,
     passthrough,
   };
+};
+
+export const deleteVideo = async (id: string) => {
+  const result = await mux.video.assets.delete(id);
+  console.log("delete video", result);
 };
