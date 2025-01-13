@@ -1,126 +1,126 @@
-import { AppRouteHandler } from "@/server/types";
+import { AppRouteHandler } from '@/server/types';
 import {
-  DeleteSectionById,
-  UpdateOneById,
-  UpdateSectionPosition,
-} from "./sections.route";
-import db from "@/server/db";
-import { courses, sections } from "@/server/db/schema";
-import { eq } from "drizzle-orm";
-import * as HttpStatusCodes from "stoker/http-status-codes";
-import { lectures } from "../../db/schema";
-import { deleteVideo } from "@/server/lib/mux";
-import { deleteThumbnail } from "@/lib/s3Actions";
+	DeleteSectionById,
+	UpdateOneById,
+	UpdateSectionPosition,
+} from './sections.route';
+import db from '@/server/db';
+import { sections } from '@/server/db/schema';
+import { eq } from 'drizzle-orm';
+import * as HttpStatusCodes from 'stoker/http-status-codes';
+import { lectures } from '../../db/schema';
+import { deleteVideo } from '@/server/lib/mux';
+import { deleteThumbnail } from '@/lib/s3Actions';
 
 export const updateOneById: AppRouteHandler<UpdateOneById> = async (c) => {
-  c.var.logger.info("updating section positions");
-  const { id } = c.req.valid("param");
-  const { title } = c.req.valid("json");
+	c.var.logger.info('updating section positions');
+	const { id } = c.req.valid('param');
+	const { title } = c.req.valid('json');
 
-  try {
-    const updatedSection = await db
-      .update(sections)
-      .set({ title })
-      .where(eq(sections.id, id));
+	try {
+		const updatedSection = await db
+			.update(sections)
+			.set({ title })
+			.where(eq(sections.id, id));
 
-    if (!updatedSection) {
-      return c.json({ message: "No Section found" }, HttpStatusCodes.NOT_FOUND);
-    }
-  } catch (error) {
-    console.log("Error updating lecture position", error);
-  }
+		if (!updatedSection) {
+			return c.json({ message: 'No Section found' }, HttpStatusCodes.NOT_FOUND);
+		}
+	} catch (error) {
+		console.log('Error updating lecture position', error);
+	}
 
-  return c.json({ message: "Section updated" }, HttpStatusCodes.OK);
+	return c.json({ message: 'Section updated' }, HttpStatusCodes.OK);
 };
 
 export const updateSectionPosition: AppRouteHandler<
-  UpdateSectionPosition
+	UpdateSectionPosition
 > = async (c) => {
-  c.var.logger.info("updating section positions");
+	c.var.logger.info('updating section positions');
 
-  const items = c.req.valid("json");
+	const items = c.req.valid('json');
 
-  for (const section of items) {
-    const { id, position } = section;
+	for (const section of items) {
+		const { id, position } = section;
 
-    try {
-      const updatedSection = await db
-        .update(sections)
-        .set({ position })
-        .where(eq(sections.id, id));
+		try {
+			const updatedSection = await db
+				.update(sections)
+				.set({ position })
+				.where(eq(sections.id, id));
 
-      if (!updatedSection) {
-        return c.json(
-          { message: "No Section found" },
-          HttpStatusCodes.NOT_FOUND
-        );
-      }
-    } catch (error) {
-      console.log("Error updating lecture position", error);
-    }
-  }
+			if (!updatedSection) {
+				return c.json(
+					{ message: 'No Section found' },
+					HttpStatusCodes.NOT_FOUND,
+				);
+			}
+		} catch (error) {
+			console.log('Error updating lecture position', error);
+		}
+	}
 
-  return c.json({ message: "Section position updated" }, HttpStatusCodes.OK);
+	return c.json({ message: 'Section position updated' }, HttpStatusCodes.OK);
 };
 
 export const deleteSectionById: AppRouteHandler<DeleteSectionById> = async (
-  c
+	c,
 ) => {
-  c.var.logger.info("updating section positions");
+	c.var.logger.info('updating section positions');
 
-  const { id } = c.req.valid("param");
+	const { id } = c.req.valid('param');
 
-  const section = await db.query.sections.findFirst({
-    where: eq(sections.id, id),
-    with: {
-      lectures: true,
-    },
-  });
+	const section = await db.query.sections.findFirst({
+		where: eq(sections.id, id),
+		with: {
+			lectures: true,
+		},
+	});
 
-  if (!section) {
-    return c.json({ message: "Section not found" }, HttpStatusCodes.NOT_FOUND);
-  }
+	if (!section) {
+		return c.json({ message: 'Section not found' }, HttpStatusCodes.NOT_FOUND);
+	}
 
-  const lectures = section.lectures ?? [];
+	const lectures = section.lectures ?? [];
 
-  for (const lecture of lectures) {
-    await deleteLecture(lecture.id);
-  }
+	for (const lecture of lectures) {
+		await deleteLecture(lecture.id);
+	}
 
-  await db.delete(sections).where(eq(sections.id, id));
+	await db.delete(sections).where(eq(sections.id, id));
 
-  c.var.logger.info(
-    `Section with ID ${id} and its lectures deleted successfully`
-  );
+	c.var.logger.info(
+		`Section with ID ${id} and its lectures deleted successfully`,
+	);
 
-  return c.json(
-    { message: "Section and its lectures deleted" },
-    HttpStatusCodes.OK
-  );
+	return c.json(
+		{ message: 'Section and its lectures deleted' },
+		HttpStatusCodes.OK,
+	);
 };
 
 export async function deleteLecture(lectureId: string) {
-  const lecture = await db.query.lectures.findFirst({
-    where: eq(lectures.id, lectureId),
-    with: {
-      video: true,
-    },
-  });
+	const lecture = await db.query.lectures.findFirst({
+		where: eq(lectures.id, lectureId),
+		with: {
+			video: true,
+		},
+	});
 
-  if (!lecture) {
-    return { success: false, message: "Lecture not found" };
-  }
+	if (!lecture) {
+		return { success: false, message: 'Lecture not found' };
+	}
 
-  const assetId = lecture.video?.asset_id;
-  if (assetId) {
-    await deleteVideo(assetId);
-  }
+	const assetId = lecture.video?.asset_id;
+	if (assetId) {
+		await deleteVideo(assetId);
+	}
 
-  if (lecture.poster_url) {
-    await deleteThumbnail(lecture.poster_url);
-  }
+	if (lecture.poster_url) {
+		await deleteThumbnail(lecture.poster_url);
+	}
 
-  await db.delete(lectures).where(eq(lectures.id, lectureId));
+	await db.delete(lectures).where(eq(lectures.id, lectureId));
 
-  return { success: true, message: "Lecture deleted" };
+	return { success: true, message: 'Lecture deleted' };
 }
