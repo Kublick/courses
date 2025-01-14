@@ -1,10 +1,18 @@
 import { AppRouteHandler } from "@/server/types";
-import { MuxWebhookEventSchema, MuxWebHookRoute } from "./weehooks.route";
+import {
+  MuxWebhookEventSchema,
+  MuxWebHookRoute,
+  StripeWebHookRoute,
+} from "./weehooks.route";
 import Mux from "@mux/mux-node";
 import { z } from "@hono/zod-openapi";
 import db from "@/server/db";
-import { videos } from "@/server/db/schema";
+import { emailVerificationCode, users, videos } from "@/server/db/schema";
 import { eq } from "drizzle-orm";
+import * as HttpStatusCodes from "stoker/http-status-codes";
+import Stripe from "stripe";
+import { nanoid } from "nanoid";
+import { client } from "@/server/client";
 
 const mux = new Mux();
 
@@ -19,7 +27,7 @@ export const muxWebHook: AppRouteHandler<MuxWebHookRoute> = async (c) => {
     mux.webhooks.verifySignature(
       rawBody,
       headers,
-      process.env.MUX_WEBHOOK_SECRET!,
+      process.env.MUX_WEBHOOK_SECRET!
     );
 
     const { type, data } = MuxWebhookEventSchema.parse(JSON.parse(rawBody));
@@ -49,15 +57,50 @@ export const muxWebHook: AppRouteHandler<MuxWebHookRoute> = async (c) => {
       default:
         logger.warn("Unhandled event type:", JSON.stringify(type));
     }
-    return c.json({ success: true }, 200);
+    return c.json({ success: true }, HttpStatusCodes.OK);
   } catch (error) {
     logger.error("Webhook processing error:", error);
-    return c.json({ error: "Webhook processing failed" }, 500);
+    return c.json(
+      { error: "Webhook processing failed" },
+      HttpStatusCodes.INTERNAL_SERVER_ERROR
+    );
   }
 };
 
+export const stripeWebhook: AppRouteHandler<StripeWebHookRoute> = async (c) => {
+  try {
+    const event = await c.req.json();
+
+    if (!event) {
+      return c.json({ error: "No Events Received" }, 400);
+    }
+
+    console.log(JSON.stringify(event, null, 2));
+
+    switch (event.type) {
+      case "checkout.session.completed": {
+        const session = event.data.object as Stripe.Checkout.Session;
+        console.log(JSON.stringify(event, null, 2));
+        await handleCheckoutSessionCompleted(session);
+        break;
+      }
+      default:
+        break;
+    }
+
+    return c.json({ success: true }, HttpStatusCodes.OK);
+  } catch (err) {
+    console.log(err);
+    return c.json(
+      { error: "Internal server error" },
+      HttpStatusCodes.BAD_REQUEST
+    );
+  }
+};
+
+// MUX CASES
 async function handleAssetCreated(
-  data: z.infer<typeof MuxWebhookEventSchema>["data"],
+  data: z.infer<typeof MuxWebhookEventSchema>["data"]
 ) {
   const { id, status, passthrough } = data;
 
@@ -87,7 +130,7 @@ async function handleAssetCreated(
 }
 
 async function handleAssetReady(
-  data: z.infer<typeof MuxWebhookEventSchema>["data"],
+  data: z.infer<typeof MuxWebhookEventSchema>["data"]
 ) {
   const { status, passthrough, duration } = data;
 
@@ -117,19 +160,19 @@ async function handleAssetReady(
 }
 
 async function handleLiveStreamStarted(
-  data: z.infer<typeof MuxWebhookEventSchema>["data"],
+  data: z.infer<typeof MuxWebhookEventSchema>["data"]
 ) {
   console.log("Live stream started:", data);
 }
 
 async function handleLiveStreamEnded(
-  data: z.infer<typeof MuxWebhookEventSchema>["data"],
+  data: z.infer<typeof MuxWebhookEventSchema>["data"]
 ) {
   console.log("Live stream ended:", data);
 }
 
 async function handleAssetDeleted(
-  data: z.infer<typeof MuxWebhookEventSchema>["data"],
+  data: z.infer<typeof MuxWebhookEventSchema>["data"]
 ) {
   const { passthrough } = data;
 
@@ -137,13 +180,93 @@ async function handleAssetDeleted(
     return;
   }
 
-  const video = await db.query.videos.findFirst({
-    where: (videos, { eq }) => eq(videos.passthrough, passthrough),
-  });
-
-  console.log("video", video);
-
   await db.delete(videos).where(eq(videos.passthrough, passthrough));
+}
 
-  console.log("Asset deleted:", data);
+//STRIPE CASES
+async function handleCheckoutSessionCompleted(
+  session: Stripe.Checkout.Session
+) {
+  const email = session.customer_details?.email;
+  const name = session.customer_details?.name;
+
+  if (!email) {
+    throw new Error("Email not provided in checkout session.");
+  }
+
+  // Example: Create user and send verification email
+
+  const verificationCode = nanoid();
+  try {
+    let customer;
+
+    customer = await db.query.users.findFirst({
+      where: eq(users.email, email),
+    });
+
+    if (customer?.email_verification) {
+      await client.api.email.$post({
+        json: {
+          name: customer.name ? customer.name : "Colega",
+          subject: "Bienvenido al curso",
+          to: email,
+          link: `${process.env.NEXT_PUBLIC_URL}/auth/login/`,
+          type: "returning",
+        },
+      });
+    }
+    // Step 1: Insert the user and get the `id`
+
+    if (!customer) {
+      const [newUser] = await db
+        .insert(users)
+        .values({
+          email: email,
+          role: "customer",
+        })
+        .returning({
+          id: users.id,
+        });
+
+      customer = newUser;
+    }
+
+    // Step 2: Use the `id` to insert the verification code
+    const [code] = await db
+      .insert(emailVerificationCode)
+      .values({
+        userid: customer.id,
+        email: email,
+        expires_at: new Date(
+          Date.now() + 7 * 24 * 60 * 60 * 1000
+        ).toISOString(),
+        used: false,
+        code: verificationCode,
+      })
+      .returning({
+        code: emailVerificationCode.code,
+      });
+
+    // Step 3: Send the email
+    await client.api.email.$post({
+      json: {
+        name: name ? name : "Colega",
+        subject: "Bienvenido al curso",
+        to: email,
+        link: `${process.env.NEXT_PUBLIC_URL}/auth/registro/${verificationCode}`,
+        type: "welcome",
+      },
+    });
+
+    return { customer, verificationCode: code };
+  } catch (error) {
+    console.error("Error creating user or sending email:", error);
+    throw error; // Re-throw the error to handle it upstream
+  }
+
+  // await sendEmail({
+  //   to: email,
+  //   subject: 'Verify your account',
+  //   text: `Your verification code is: ${verificationCode}`,
+  // });
 }

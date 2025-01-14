@@ -1,5 +1,5 @@
 import { z } from "@hono/zod-openapi";
-import { InferSelectModel, relations } from "drizzle-orm";
+import { InferSelectModel, Many, relations } from "drizzle-orm";
 import {
   boolean,
   customType,
@@ -44,9 +44,9 @@ export const roleEnums = pgEnum("roles", ["user", "admin", "customer"]);
 
 export const users = pgTable("users", (t) => ({
   id: t.uuid().defaultRandom().primaryKey(),
-  username: t.text().notNull(),
+  username: t.text(),
   email: t.text().notNull().unique(),
-  password_hash: t.text().notNull(),
+  password_hash: t.text(),
   role: roleEnums("role").notNull().default("user"),
   created_at: t.timestamp({ mode: "string" }).defaultNow().notNull(),
   updated_at: t.timestamp({ mode: "string" }),
@@ -54,6 +54,7 @@ export const users = pgTable("users", (t) => ({
   lastname: t.text(),
   phone: t.text(),
   address: t.text(),
+  email_verification: t.boolean(),
 }));
 
 export type User = InferSelectModel<typeof users>;
@@ -74,7 +75,7 @@ export const selectUserSchema = createSelectSchema(users).pick({
 });
 
 export const sessions = pgTable("session", (t) => ({
-  id: t.text().primaryKey(),
+  id: uuid("id").primaryKey().defaultRandom(),
   userid: t
     .uuid()
     .notNull()
@@ -88,6 +89,111 @@ export const sessions = pgTable("session", (t) => ({
 }));
 
 export type Session = InferSelectModel<typeof sessions>;
+
+//Verification codes
+export const emailVerificationCode = pgTable("emailVerificationCode", (t) => ({
+  id: uuid("id").primaryKey().defaultRandom(),
+  userid: t
+    .uuid()
+    .notNull()
+    .references(() => users.id),
+  email: t.text().notNull(),
+  created_at: t.timestamp({ mode: "string" }).defaultNow().notNull(),
+  expires_at: t
+    .timestamp("expires_at", {
+      withTimezone: true,
+      mode: "string",
+    })
+    .notNull(),
+  used: t.boolean().default(false),
+  code: t.text(),
+}));
+
+export type EmailVerificationCode = InferSelectModel<
+  typeof emailVerificationCode
+>;
+
+export const emailVerificationCodeRelations = relations(
+  emailVerificationCode,
+  ({ one }) => ({
+    user: one(users, {
+      fields: [emailVerificationCode.userid],
+      references: [users.id],
+    }),
+  })
+);
+
+export const insertEmailVerificationCode = createInsertSchema(
+  emailVerificationCode,
+  {
+    email: (schema) => schema.email("El email ingresado no es valido"),
+  }
+).pick({
+  userid: true,
+  email: true,
+});
+
+export const userRelations = relations(users, ({ many }) => ({
+  emailVerificationCodes: many(emailVerificationCode, {
+    relationName: "user_email_verification_code",
+  }),
+}));
+// Purchases
+export const purchases = pgTable("purchases", (t) => ({
+  id: t.uuid().primaryKey().defaultRandom(),
+  user_id: t
+    .uuid()
+    .notNull()
+    .references(() => users.id),
+  product_id: t
+    .uuid()
+    .notNull()
+    .references(() => courses.id), // Assuming `courses` are the products
+  stripe_id: t.text().notNull(), // Stripe Payment Intent or Session ID
+  price: numericCasted({ precision: 10, scale: 2 }).notNull(),
+  created_at: t.timestamp({ mode: "string" }).defaultNow().notNull(),
+}));
+
+export type Purchase = InferSelectModel<typeof purchases>;
+
+export const insertPurchaseSchema = createInsertSchema(purchases, {
+  user_id: (schema) =>
+    schema.openapi({
+      type: "string",
+      format: "uuid",
+    }),
+  product_id: (schema) =>
+    schema.openapi({
+      type: "string",
+      format: "uuid",
+    }),
+  stripe_id: (schema) => schema.openapi({ minLength: 1 }),
+  price: (schema) =>
+    schema.openapi({
+      type: "number",
+      minimum: 0,
+    }),
+});
+
+export const selectPurchaseSchema = createSelectSchema(purchases).pick({
+  id: true,
+  user_id: true,
+  product_id: true,
+  stripe_id: true,
+  price: true,
+  created_at: true,
+});
+
+export const purchaseRelations = relations(purchases, ({ one }) => ({
+  user: one(users, {
+    fields: [purchases.user_id],
+    references: [users.id],
+  }),
+  product: one(courses, {
+    fields: [purchases.product_id],
+    references: [courses.id],
+  }),
+}));
 
 // Courses
 export const courses = pgTable("courses", {

@@ -1,4 +1,5 @@
 import { createRoute, z } from "@hono/zod-openapi";
+import * as HttpStatusCodes from "stoker/http-status-codes";
 
 export const MuxWebhookEventSchema = z.object({
   type: z.enum([
@@ -19,12 +20,16 @@ export const MuxWebhookEventSchema = z.object({
         z.object({
           policy: z.string(),
           id: z.string(),
-        }),
+        })
       )
       .optional(),
     duration: z.number().optional(),
   }),
   created_at: z.string(),
+});
+
+export const StripeWeebHookSchema = z.object({
+  type: z.enum(["checkout.session.completed"]),
 });
 
 export const muxWebHook = createRoute({
@@ -41,7 +46,7 @@ export const muxWebHook = createRoute({
     },
   },
   responses: {
-    200: {
+    [HttpStatusCodes.OK]: {
       description: "Webhook successfully processed",
       content: {
         "application/json": {
@@ -51,7 +56,7 @@ export const muxWebHook = createRoute({
         },
       },
     },
-    400: {
+    [HttpStatusCodes.BAD_REQUEST]: {
       description: "Invalid webhook signature or payload",
       content: {
         "application/json": {
@@ -61,7 +66,7 @@ export const muxWebHook = createRoute({
         },
       },
     },
-    403: {
+    [HttpStatusCodes.FORBIDDEN]: {
       description: "Invalid webhook signature",
       content: {
         "application/json": {
@@ -71,7 +76,7 @@ export const muxWebHook = createRoute({
         },
       },
     },
-    500: {
+    [HttpStatusCodes.INTERNAL_SERVER_ERROR]: {
       description: "Internal server error",
       content: {
         "application/json": {
@@ -84,4 +89,42 @@ export const muxWebHook = createRoute({
   },
 });
 
+export const stripeWebhook = createRoute({
+  tags: ["webhooks"],
+  path: "/webhooks/stripe",
+  method: "post",
+  request: {
+    body: {
+      content: {
+        "application/json": {
+          schema: StripeWeebHookSchema,
+        },
+      },
+    },
+  },
+  responses: {
+    [HttpStatusCodes.OK]: {
+      description: "Webhook successfully processed",
+      content: {
+        "application/json": {
+          schema: z.object({
+            success: z.boolean(),
+          }),
+        },
+      },
+    },
+    [HttpStatusCodes.BAD_REQUEST]: {
+      description: "Invalid payload or signature",
+      content: {
+        "application/json": {
+          schema: z.object({
+            error: z.string(),
+          }),
+        },
+      },
+    },
+  },
+});
+
 export type MuxWebHookRoute = typeof muxWebHook;
+export type StripeWebHookRoute = typeof stripeWebhook;
