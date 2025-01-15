@@ -60,12 +60,15 @@ export const users = pgTable("users", (t) => ({
 export type User = InferSelectModel<typeof users>;
 
 export const insertUserSchema = createInsertSchema(users, {
-  username: (schema) => schema.openapi({ minLength: 3 }),
   email: (schema) => schema.email("El email ingresado no es valido"),
 }).pick({
-  username: true,
   email: true,
   role: true,
+});
+
+export const insertCustomerSchema = createInsertSchema(users, {
+  name: (schema) => schema.min(1, { message: "Nombre es requerido" }),
+  lastname: (schema) => schema.min(1, { message: "Apellido es requerido" }),
 });
 
 export const selectUserSchema = createSelectSchema(users).pick({
@@ -75,7 +78,7 @@ export const selectUserSchema = createSelectSchema(users).pick({
 });
 
 export const sessions = pgTable("session", (t) => ({
-  id: uuid("id").primaryKey().defaultRandom(),
+  id: t.text().primaryKey(),
   userid: t
     .uuid()
     .notNull()

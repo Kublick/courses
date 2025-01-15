@@ -3,6 +3,7 @@ import { jsonContent, jsonContentRequired } from "stoker/openapi/helpers";
 import * as HttpStatusCodes from "stoker/http-status-codes";
 
 import { notFoundSchema, unAuthorizedSchema } from "@/server/lib/constants";
+import { IdUUIDParamsSchema, SlugParamsSchema } from "stoker/openapi/schemas";
 
 const LoginUserSchema = z.object({
   email: z.string().email(),
@@ -34,5 +35,36 @@ export const login = createRoute({
   },
 });
 
+export const getVerificationCode = createRoute({
+  tags: ["auth"],
+  path: "/auth/{slug}",
+  method: "get",
+  params: SlugParamsSchema,
+  responses: {
+    [HttpStatusCodes.NOT_FOUND]: jsonContent(
+      z.object({
+        message: z.string(),
+        status: z.boolean(),
+      }),
+      "No code exists"
+    ),
+    [HttpStatusCodes.OK]: jsonContent(
+      z.object({
+        message: z.string(),
+        status: z.boolean(),
+      }),
+      "Verification Code Success"
+    ),
+    [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
+      z.object({
+        message: z.string(),
+      }),
+      "Server Error"
+    ),
+  },
+});
+
 export type UserLoginRoute = typeof login;
+export type VerificationCodeRoute = typeof getVerificationCode;
+
 // export type CreateUserRoute = typeof create;

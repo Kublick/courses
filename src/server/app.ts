@@ -10,7 +10,6 @@ import sections from "./routes/sections/sections.index";
 import payments from "./routes/payments/payments.index";
 import email from "./routes/email/email.index";
 import { initializeStripe } from "./lib/stripe-client";
-// import { honoStripe } from "./routes/stripe/stripe-hono";
 
 const app = createApp();
 
@@ -52,8 +51,6 @@ const routes = app
   .route("/", sections)
   .route("/", payments)
   .route("/", email);
-
-// app.route("/", honoStripe);
 
 export type AppType = typeof routes;
 

@@ -1,9 +1,9 @@
 import { AppRouteHandler } from "@/server/types";
 
 import db from "@/server/db";
-import { UserLoginRoute } from "./auth.route";
+import { UserLoginRoute, VerificationCodeRoute } from "./auth.route";
 import { eq } from "drizzle-orm";
-import { users } from "@/server/db/schema";
+import { emailVerificationCode, users } from "@/server/db/schema";
 import { verifyHash } from "@/server/lib/utils";
 import * as HttpStatusCodes from "stoker/http-status-codes";
 // import * as HttpStatusPhrases from "stoker/http-status-phrases";
@@ -12,6 +12,7 @@ import {
   generateSessionToken,
   setSessionTokenCookie,
 } from "@/server/auth";
+import { client } from "@/server/client";
 
 export const login: AppRouteHandler<UserLoginRoute> = async (c) => {
   c.var.logger.info("Loggin In User");
@@ -32,7 +33,7 @@ export const login: AppRouteHandler<UserLoginRoute> = async (c) => {
     );
   }
 
-  const verify = await verifyHash(existingUser.password_hash, password);
+  const verify = await verifyHash(existingUser.password_hash!, password);
 
   if (!verify) {
     return c.json(
@@ -52,4 +53,35 @@ export const login: AppRouteHandler<UserLoginRoute> = async (c) => {
   return c.json({
     message: "Login Success",
   });
+};
+
+export const getVerificationCode: AppRouteHandler<
+  VerificationCodeRoute
+> = async (c) => {
+  c.var.logger.info("Getting Code");
+
+  const slug = c.req.param("slug");
+  try {
+    const code = await db.query.emailVerificationCode.findFirst({
+      where: (emailVerificationCode, { eq }) =>
+        eq(emailVerificationCode.code, slug),
+    });
+
+    if (!code) {
+      return c.json({
+        message: "Code Not Found",
+        status: false,
+      });
+    }
+
+    return c.json(
+      {
+        message: code.email,
+        status: true,
+      },
+      404
+    );
+  } catch (err) {
+    return c.json({ message: "Server Error" }, 500);
+  }
 };

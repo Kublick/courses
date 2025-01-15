@@ -194,8 +194,6 @@ async function handleCheckoutSessionCompleted(
     throw new Error("Email not provided in checkout session.");
   }
 
-  // Example: Create user and send verification email
-
   const verificationCode = nanoid();
   try {
     let customer;
@@ -215,7 +213,6 @@ async function handleCheckoutSessionCompleted(
         },
       });
     }
-    // Step 1: Insert the user and get the `id`
 
     if (!customer) {
       const [newUser] = await db
@@ -231,7 +228,6 @@ async function handleCheckoutSessionCompleted(
       customer = newUser;
     }
 
-    // Step 2: Use the `id` to insert the verification code
     const [code] = await db
       .insert(emailVerificationCode)
       .values({
@@ -261,12 +257,6 @@ async function handleCheckoutSessionCompleted(
     return { customer, verificationCode: code };
   } catch (error) {
     console.error("Error creating user or sending email:", error);
-    throw error; // Re-throw the error to handle it upstream
+    throw error;
   }
-
-  // await sendEmail({
-  //   to: email,
-  //   subject: 'Verify your account',
-  //   text: `Your verification code is: ${verificationCode}`,
-  // });
 }

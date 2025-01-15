@@ -1,7 +1,6 @@
 import { createRoute, z } from "@hono/zod-openapi";
 import { jsonContent, jsonContentRequired } from "stoker/openapi/helpers";
 import * as HttpStatusCodes from "stoker/http-status-codes";
-
 import { selectUserSchema } from "@/server/db/schema";
 import { createErrorSchema } from "stoker/openapi/schemas";
 
@@ -50,5 +49,40 @@ export const create = createRoute({
   },
 });
 
+const RegisterForm = z.object({
+  name: z.string(),
+  lastname: z.string(),
+  password: z.string(),
+  email: z.string().email(),
+});
+
+export const createCustomer = createRoute({
+  tags: ["users"],
+  path: "/users/customer",
+  method: "post",
+  request: {
+    body: jsonContentRequired(RegisterForm, "The user to create"),
+  },
+  responses: {
+    [HttpStatusCodes.OK]: jsonContent(
+      z.object({
+        id: z.string(),
+      }),
+      "The created user"
+    ),
+    [HttpStatusCodes.UNPROCESSABLE_ENTITY]: jsonContent(
+      createErrorSchema(CreateUserSchema),
+      "The user already exists"
+    ),
+    [HttpStatusCodes.CONFLICT]: jsonContent(
+      z.object({
+        message: z.string(),
+      }),
+      "The user already exists"
+    ),
+  },
+});
+
 export type UserListRoute = typeof list;
 export type CreateUserRoute = typeof create;
+export type CreateCustomerRoute = typeof createCustomer;
