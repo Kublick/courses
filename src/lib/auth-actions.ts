@@ -8,7 +8,7 @@ export const validateVerificationCode = async (id: string) => {
 
   const result = (await code.json()) as { message: string; status: boolean };
 
-  if (result.status) {
+  if (result.status === true) {
     return {
       email: result.message,
       status: true,
@@ -16,7 +16,7 @@ export const validateVerificationCode = async (id: string) => {
   } else {
     return {
       email: result.message,
-      status: true,
+      status: false,
     };
   }
 };

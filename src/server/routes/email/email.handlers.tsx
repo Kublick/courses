@@ -6,6 +6,9 @@ import { render } from "@react-email/render";
 
 import EmailActivateAccount from "@/features/email/email-activate-account";
 import EmailReturningAccount from "@/features/email/email-returning-account";
+import EmailConfirmRegister from "@/features/email/email-confirm-register";
+import EmailPasswordResetRequest from "@/features/email/email-password-reset-request";
+import EmailPasswordConfirmation from "@/features/email/email-password-updated";
 
 const key = process.env.RESEND_API_KEY;
 
@@ -15,8 +18,6 @@ if (!key) {
 const resend = new Resend(key);
 
 export const sendEmail: AppRouteHandler<TestEmailRoute> = async (c) => {
-  c.var.logger.info("Processing email");
-
   const { to, link, subject, name, type } = c.req.valid("json");
 
   let html;
@@ -37,6 +38,24 @@ export const sendEmail: AppRouteHandler<TestEmailRoute> = async (c) => {
           pretty: true,
         }
       );
+    case "confirm_registration":
+      html = await render(
+        <EmailConfirmRegister inviteLink={link} name={name} />,
+        {
+          pretty: true,
+        }
+      );
+    case "password_reset_request":
+      html = await render(
+        <EmailPasswordResetRequest inviteLink={link} name={name} />,
+        {
+          pretty: true,
+        }
+      );
+    case "password_confirmation":
+      html = await render(<EmailPasswordConfirmation />, {
+        pretty: true,
+      });
   }
 
   if (!html) {
@@ -53,8 +72,6 @@ export const sendEmail: AppRouteHandler<TestEmailRoute> = async (c) => {
   if (error) {
     return c.json({ message: "Error sending email" }, 400);
   }
-
-  console.log(data);
 
   return c.json({ message: "Email sent" }, HttpStatusCodes.OK);
 };

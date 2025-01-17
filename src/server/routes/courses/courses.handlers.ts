@@ -12,6 +12,8 @@ import * as HttpStatusCodes from "stoker/http-status-codes";
 
 import { eq } from "drizzle-orm";
 
+import { initializeStripe } from "@/server/lib/stripe-client";
+
 const generateSlug = async (title: string): Promise<string> => {
   const baseSlug = title
     .toLowerCase()
@@ -39,7 +41,7 @@ const generateSlug = async (title: string): Promise<string> => {
 
 export const create: AppRouteHandler<CreateCoursesRoute> = async (c) => {
   c.var.logger.info("Creating course");
-
+  const stripe = initializeStripe();
   const data = c.req.valid("json");
 
   await db.query.courses.findFirst({
@@ -48,19 +50,61 @@ export const create: AppRouteHandler<CreateCoursesRoute> = async (c) => {
 
   const slug = await generateSlug(data.title);
 
-  const [createCourse] = await db
-    .insert(courses)
-    .values({
-      title: data.title,
+  try {
+    const product = await stripe.products.create({
+      name: data.title,
       description: data.description,
-      price: data.price,
-      slug: slug,
-    })
-    .returning();
+    });
+    console.log(
+      "🚀 ~ constcreate:AppRouteHandler<CreateCoursesRoute>= ~ product:",
+      product
+    );
+
+    const priceInCents = data.price * 100;
+
+    const price = await stripe.prices.create({
+      unit_amount: priceInCents,
+      currency: "usd",
+      product: product.id,
+    });
+    console.log(
+      "🚀 ~ constcreate:AppRouteHandler<CreateCoursesRoute>= ~ price:",
+      price
+    );
+
+    const [createCourse] = await db
+      .insert(courses)
+      .values({
+        title: data.title,
+        description: data.description,
+        price: data.price,
+        slug: slug,
+        stripe_price_id: price.id,
+        stripe_product_id: product.id,
+      })
+      .returning();
+    return c.json(createCourse, HttpStatusCodes.OK);
+  } catch (e) {
+    console.log(e);
+    return c.json(
+      {
+        error: {
+          issues: [
+            {
+              code: "INTERNAL_SERVER_ERROR",
+              path: [],
+              message: "An unexpected error occurred.",
+            },
+          ],
+          name: "Error",
+        },
+        success: false,
+      },
+      HttpStatusCodes.INTERNAL_SERVER_ERROR
+    );
+  }
 
   // TOOD integrate with stripe api
-
-  return c.json(createCourse, HttpStatusCodes.OK);
 };
 
 export const list: AppRouteHandler<ListCoursesRoute> = async (c) => {

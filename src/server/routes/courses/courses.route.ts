@@ -37,6 +37,10 @@ export const create = createRoute({
       createErrorSchema(insertCourseSchema),
       "You dont have permission to create a course"
     ),
+    [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
+      createErrorSchema(insertCourseSchema),
+      "There is a problem creating course"
+    ),
   },
 });
 

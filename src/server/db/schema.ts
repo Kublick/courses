@@ -1,5 +1,10 @@
 import { z } from "@hono/zod-openapi";
-import { InferSelectModel, Many, relations } from "drizzle-orm";
+import {
+  InferInsertModel,
+  InferSelectModel,
+  Many,
+  relations,
+} from "drizzle-orm";
 import {
   boolean,
   customType,
@@ -159,24 +164,7 @@ export const purchases = pgTable("purchases", (t) => ({
 
 export type Purchase = InferSelectModel<typeof purchases>;
 
-export const insertPurchaseSchema = createInsertSchema(purchases, {
-  user_id: (schema) =>
-    schema.openapi({
-      type: "string",
-      format: "uuid",
-    }),
-  product_id: (schema) =>
-    schema.openapi({
-      type: "string",
-      format: "uuid",
-    }),
-  stripe_id: (schema) => schema.openapi({ minLength: 1 }),
-  price: (schema) =>
-    schema.openapi({
-      type: "number",
-      minimum: 0,
-    }),
-});
+export type PurchaseInsert = InferInsertModel<typeof purchases>;
 
 export const selectPurchaseSchema = createSelectSchema(purchases).pick({
   id: true,
@@ -208,6 +196,9 @@ export const courses = pgTable("courses", {
   slug: text().notNull().unique(),
   created_at: timestamp({ mode: "string" }).defaultNow().notNull(),
   updated_at: timestamp({ mode: "string" }),
+  deleted_at: timestamp({ mode: "string" }),
+  stripe_product_id: text().unique().notNull(), // Stripe's prod_ ID
+  stripe_price_id: text().unique().notNull(),
 });
 
 export type Course = InferSelectModel<typeof courses>;
@@ -229,6 +220,8 @@ export const insertCourseSchema = createInsertSchema(courses, {
   id: true,
   slug: true,
   is_published: true,
+  stripe_product_id: true,
+  stripe_price_id: true,
 });
 
 export const selectCourseSchema = createSelectSchema(courses).pick({

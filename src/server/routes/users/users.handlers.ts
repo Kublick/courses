@@ -10,6 +10,7 @@ import { emailVerificationCode, users } from "@/server/db/schema";
 import { hashPassword } from "@/server/lib/utils";
 import { eq } from "drizzle-orm";
 import { VerificationCodeRoute } from "../auth/auth.route";
+import { client } from "@/server/client";
 
 export const list: AppRouteHandler<UserListRoute> = async (c) => {
   c.var.logger.info("Listing users");
@@ -93,6 +94,16 @@ export const createCustomer: AppRouteHandler<CreateCustomerRoute> = async (
   await db
     .delete(emailVerificationCode)
     .where(eq(emailVerificationCode.email, email));
+
+  await client.api.email.$post({
+    json: {
+      name: name ? name : "Colega",
+      subject: "Registro Exitoso",
+      to: email,
+      link: `${process.env.NEXT_PUBLIC_URL}/auth/login`,
+      type: "confirm_registration",
+    },
+  });
 
   return c.json({ id: update.id }, HttpStatusCodes.OK);
 };

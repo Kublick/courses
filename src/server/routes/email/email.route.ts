@@ -7,7 +7,13 @@ const sendEmail = z.object({
   subject: z.string(),
   link: z.string().optional(),
   name: z.string().optional(),
-  type: z.enum(["welcome", "returning"]),
+  type: z.enum([
+    "welcome",
+    "returning",
+    "confirm_registration",
+    "password_reset_request",
+    "password_confirmation",
+  ]),
 });
 
 export const testEmail = createRoute({

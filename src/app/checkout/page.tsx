@@ -6,7 +6,7 @@ const CheckOut = async () => {
       <div className="max-w-7xl mx-auto px-4">
         <h1 className="text-3xl font-bold text-center mb-8">Make a Payment</h1>
         <ProductCheckout
-          priceId="price_1QgZWfEPP9iiw0AmdWqwzMGn"
+          priceId="price_1Qi0ByEPP9iiw0AmQOF81Dnw"
           productName="Incrementa tu consulta"
           price={94700}
           currency="usd"

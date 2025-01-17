@@ -21,31 +21,32 @@ import { Input } from "@/components/ui/input";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import Link from "next/link";
-import { useLogin } from "../api/use-login";
 import Image from "next/image";
+
+import { useRouter } from "next/navigation";
+import { useResetPasswordRequest } from "../api/use-reset-password-request";
 
 const formSchema = z.object({
   email: z
     .string()
     .email({ message: "Ingrese un email válido" })
     .min(3, "Ingrese un nombre de usuario válido"),
-  password: z.string().min(6, "Ingrese una contraseña válida"),
 });
 
-export function LoginForm() {
+export function ForgotPassword() {
+  const router = useRouter();
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       email: "",
-      password: "",
     },
   });
 
-  const loginMutation = useLogin();
+  const requestReset = useResetPasswordRequest();
 
   function onSubmit(data: z.infer<typeof formSchema>) {
-    loginMutation.mutate(data);
+    requestReset.mutate(data);
+    router.push("/auth/login");
   }
 
   return (
@@ -63,7 +64,7 @@ export function LoginForm() {
               />
             </CardTitle>
             <CardDescription>
-              Ingresa con tu usuario y contraseña para acceder a tu cuenta.
+              Ingresa tu correo electronico para reiniciar tu contraseña
             </CardDescription>
           </CardHeader>
           <CardContent className="grid gap-4">
@@ -82,37 +83,11 @@ export function LoginForm() {
                   </FormItem>
                 )}
               />
-
-              <FormField
-                control={form.control}
-                name="password"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Contraseña</FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="contraseña"
-                        {...field}
-                        type="Password"
-                      />
-                    </FormControl>
-
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
             </div>
           </CardContent>
           <CardFooter>
-            <Button className="w-full">Ingresar</Button>
+            <Button className="w-full">Restablecer</Button>
           </CardFooter>
-          <div className="py-4 text-center text-sm">
-            ¿
-            <Link href="/auth/olvido" className="underline">
-              Olvidaste tu contraseña
-            </Link>
-            ?
-          </div>
         </Card>
       </form>
     </Form>

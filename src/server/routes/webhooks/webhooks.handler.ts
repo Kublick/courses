@@ -7,12 +7,20 @@ import {
 import Mux from "@mux/mux-node";
 import { z } from "@hono/zod-openapi";
 import db from "@/server/db";
-import { emailVerificationCode, users, videos } from "@/server/db/schema";
+import {
+  courses,
+  emailVerificationCode,
+  PurchaseInsert,
+  purchases,
+  users,
+  videos,
+} from "@/server/db/schema";
 import { eq } from "drizzle-orm";
 import * as HttpStatusCodes from "stoker/http-status-codes";
 import Stripe from "stripe";
 import { nanoid } from "nanoid";
 import { client } from "@/server/client";
+import { initializeStripe } from "@/server/lib/stripe-client";
 
 const mux = new Mux();
 
@@ -31,7 +39,7 @@ export const muxWebHook: AppRouteHandler<MuxWebHookRoute> = async (c) => {
     );
 
     const { type, data } = MuxWebhookEventSchema.parse(JSON.parse(rawBody));
-    console.log("webhook type", type, data);
+
     switch (type) {
       case "video.upload.created":
         console.log("video.upload.created");
@@ -74,8 +82,6 @@ export const stripeWebhook: AppRouteHandler<StripeWebHookRoute> = async (c) => {
     if (!event) {
       return c.json({ error: "No Events Received" }, 400);
     }
-
-    console.log(JSON.stringify(event, null, 2));
 
     switch (event.type) {
       case "checkout.session.completed": {
@@ -197,7 +203,6 @@ async function handleCheckoutSessionCompleted(
   const verificationCode = nanoid();
   try {
     let customer;
-
     customer = await db.query.users.findFirst({
       where: eq(users.email, email),
     });
@@ -243,6 +248,23 @@ async function handleCheckoutSessionCompleted(
         code: emailVerificationCode.code,
       });
 
+    const items = await fetchLineItems(session.id);
+
+    const stripe_product_id = items[0].price?.product as string;
+
+    const course = await db.query.courses.findFirst({
+      where: eq(courses.stripe_product_id, stripe_product_id),
+    });
+
+    const purchasedItem: PurchaseInsert = {
+      user_id: customer.id,
+      stripe_id: items[0].price?.id ?? "",
+      product_id: course?.id ?? "",
+      price: items[0].amount_total,
+    };
+
+    await db.insert(purchases).values(purchasedItem);
+
     // Step 3: Send the email
     await client.api.email.$post({
       json: {
@@ -260,3 +282,18 @@ async function handleCheckoutSessionCompleted(
     throw error;
   }
 }
+
+const fetchLineItems = async (
+  sessionId: string
+): Promise<Stripe.LineItem[]> => {
+  const stripe = initializeStripe();
+
+  try {
+    const lineItems = await stripe.checkout.sessions.listLineItems(sessionId);
+    console.log(lineItems);
+    return lineItems.data; // Array of line items
+  } catch (error) {
+    console.error("Error fetching line items:", error);
+    throw error;
+  }
+};

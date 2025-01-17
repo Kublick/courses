@@ -64,7 +64,66 @@ export const getVerificationCode = createRoute({
   },
 });
 
+export const getResetPasswordRequest = createRoute({
+  tags: ["auth"],
+  path: "/auth/reset-request",
+  method: "post",
+  request: {
+    body: jsonContentRequired(
+      z.object({
+        email: z.string().email(),
+      }),
+      "Successful Login"
+    ),
+  },
+  responses: {
+    [HttpStatusCodes.OK]: jsonContent(
+      z.object({
+        message: z.string(),
+      }),
+      "Request Sucess"
+    ),
+    [HttpStatusCodes.NOT_FOUND]: jsonContent(
+      z.object({
+        message: z.string(),
+      }),
+      "Not found"
+    ),
+  },
+});
+
+export const resetPasswordRoute = createRoute({
+  tags: ["auth"],
+  path: "/auth/password-reset",
+  method: "post",
+  request: {
+    body: jsonContentRequired(
+      z.object({
+        password: z.string().min(3),
+        code: z.string(),
+      }),
+      "Successful Password reset"
+    ),
+  },
+  responses: {
+    [HttpStatusCodes.OK]: jsonContent(
+      z.object({
+        message: z.string(),
+      }),
+      "Request Sucess"
+    ),
+    [HttpStatusCodes.NOT_FOUND]: jsonContent(
+      z.object({
+        message: z.string(),
+      }),
+      "Not found"
+    ),
+  },
+});
+
 export type UserLoginRoute = typeof login;
 export type VerificationCodeRoute = typeof getVerificationCode;
+export type GetResetPasswordRequest = typeof getResetPasswordRequest;
+export type ResetPasswordRoute = typeof resetPasswordRoute;
 
 // export type CreateUserRoute = typeof create;

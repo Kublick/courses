@@ -2,6 +2,8 @@ import { withNextVideo } from "next-video/process";
 import type { NextConfig } from "next";
 import path from "path";
 
+require("dotenv").config();
+
 const nextConfig: NextConfig = {
   images: {
     remotePatterns: [
