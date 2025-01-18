@@ -198,9 +198,11 @@ const UpdateLecture = ({ id }: Props) => {
                         {data?.poster_url ? (
                           <Image
                             src={data.poster_url ?? ""}
-                            width={240}
-                            height={240}
+                            height={320}
+                            width={568}
+                            className="w-auto"
                             alt={data.title}
+                            priority={true}
                           />
                         ) : (
                           <FormField

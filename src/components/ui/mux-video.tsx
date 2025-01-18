@@ -1,5 +1,6 @@
 "use client";
 
+import Video from "next-video";
 import Player from "next-video/player";
 import Image from "next/image";
 
@@ -14,7 +15,14 @@ const VideoPlayer = ({ playbackId, posterUrl }: Props) => {
   return (
     <Player src={videoUrl}>
       {posterUrl && (
-        <Image slot="poster" src={posterUrl} alt="poster" layout="fill" />
+        <Image
+          slot="poster"
+          src={posterUrl}
+          alt="poster"
+          fill
+          sizes="max-w-l h-36"
+          priority={true}
+        />
       )}
     </Player>
   );

@@ -147,6 +147,7 @@ const NewLecture = ({ section_id, lecturesLength }: Props) => {
                       </FormItem>
                     )}
                   />
+
                   <FormField
                     control={form.control}
                     name="description"
@@ -165,7 +166,6 @@ const NewLecture = ({ section_id, lecturesLength }: Props) => {
                       );
                     }}
                   />
-
                   <FormField
                     control={form.control}
                     name="file"

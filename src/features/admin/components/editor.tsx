@@ -20,15 +20,41 @@ import {
   List,
   ListOrdered,
   Quote,
+  Link2,
+  Link2Off,
 } from "lucide-react";
 import { useEffect, useState } from "react";
+import Link from "@tiptap/extension-link";
+import { Button } from "@/components/ui/button";
 
 interface MenuBarProps {
   editor: Editor | null;
 }
 
 const MenuBar: React.FC<MenuBarProps> = ({ editor }) => {
+  const [isLinkModalOpen, setIsLinkModalOpen] = useState(false);
+  const [linkUrl, setLinkUrl] = useState("");
+
   if (!editor) return null;
+
+  const setLink = () => {
+    if (linkUrl === "") {
+      editor.chain().focus().extendMarkRange("link").unsetLink().run();
+      return;
+    }
+
+    const url = /^https?:\/\//.test(linkUrl) ? linkUrl : `https://${linkUrl}`;
+
+    editor.chain().focus().extendMarkRange("link").setLink({ href: url }).run();
+    setLinkUrl("");
+    setIsLinkModalOpen(false);
+  };
+
+  const openLinkModal = () => {
+    const previousUrl = editor.getAttributes("link").href;
+    setLinkUrl(previousUrl || "");
+    setIsLinkModalOpen(true);
+  };
 
   return (
     <div className="flex flex-wrap gap-2 p-2 bg-gray-50 rounded-t-lg border border-gray-200">
@@ -173,6 +199,59 @@ const MenuBar: React.FC<MenuBarProps> = ({ editor }) => {
       >
         <AlignJustify size={20} className="text-gray-700" />
       </button>
+
+      <button
+        onClick={openLinkModal}
+        className={`px-3 py-1.5 text-sm font-medium rounded hover:bg-gray-100 transition-colors ${
+          editor.isActive("link")
+            ? "bg-blue-100 text-blue-600"
+            : "bg-white text-gray-700"
+        }`}
+        type="button"
+      >
+        <Link2 size={20} className="text-gray-700" />
+      </button>
+
+      {editor.isActive("link") && (
+        <button
+          onClick={() => editor.chain().focus().unsetLink().run()}
+          className="px-3 py-1.5 text-sm font-medium rounded hover:bg-gray-100 transition-colors bg-white text-gray-700"
+          type="button"
+        >
+          <Link2Off size={20} className="text-gray-700" />
+        </button>
+      )}
+
+      {/* Link Modal */}
+      {isLinkModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-4 rounded-lg shadow-lg min-w-[300px]">
+            <h3 className="text-lg font-medium mb-4">Agregar Dirección</h3>
+            <input
+              type="text"
+              value={linkUrl}
+              onChange={(e) => setLinkUrl(e.target.value)}
+              placeholder="Dirección"
+              className="w-full px-3 py-2 border rounded mb-4"
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  setLink();
+                }
+              }}
+            />
+            <div className="flex justify-end gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setIsLinkModalOpen(false)}
+              >
+                Cancelar
+              </Button>
+
+              <Button onClick={setLink}>Agregar</Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -199,6 +278,12 @@ const TipTapEditor: React.FC<EditorProps> = ({ onChange, value }) => {
       OrderedList,
       Blockquote,
       BulletList,
+      Link.configure({
+        openOnClick: false,
+        HTMLAttributes: {
+          class: "text-blue-600 hover:text-blue-800 underline",
+        },
+      }),
     ],
     content: value || "",
     onUpdate: ({ editor }) => {
