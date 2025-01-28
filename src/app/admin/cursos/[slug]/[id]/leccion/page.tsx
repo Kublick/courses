@@ -16,7 +16,7 @@ const NewLecturePage = async ({ params, searchParams }: LecturaPageProps) => {
   const { numero: lectureNumber } = await searchParams;
 
   return (
-    <div className="p-4">
+    <div className="container mx-auto">
       <LectureForm
         slug={slug}
         section_id={sectionId}

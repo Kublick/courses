@@ -17,8 +17,6 @@ const EnrollementsPage = async () => {
           </Link>
         </div>
       ))}
-
-      {JSON.stringify(resp)}
     </div>
   );
 };

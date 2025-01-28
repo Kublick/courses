@@ -1,34 +1,34 @@
 "use client";
-
-import { useGetLecture } from "../api/use-get-lecture";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { useForm } from "react-hook-form";
-import { z } from "zod";
-import { zodResolver } from "@hookform/resolvers/zod";
-
+import React, { useState, useEffect } from "react";
 import {
+  Form,
   FormControl,
-  FormMessage,
   FormField,
   FormItem,
   FormLabel,
-  Form,
+  FormMessage,
 } from "@/components/ui/form";
-import VideoPlayer from "@/components/ui/mux-video";
-import Image from "next/image";
-import { Separator } from "@/components/ui/separator";
-import { Loader2 } from "lucide-react";
-import TipTapEditor from "./editor";
-import { VideoDropzone } from "@/components/ui/video-dropzone";
+import dynamic from "next/dynamic";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { toast } from "sonner";
 import { ImageDropzone } from "@/components/ui/image-dropzone";
-import { useEffect } from "react";
-interface Props {
-  id: string;
-}
+import { VideoDropzone } from "@/components/ui/video-dropzone";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { ArrowLeft, Loader2 } from "lucide-react";
+import { useGetLecture } from "../api/use-get-lecture";
+import { useUpdateLecture } from "../api/use-update-lecture";
+import Video from "next-video";
 
-const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
-const MAX_THUMBNAIL_SIZE = 2 * 1024 * 1024; // 2MB
+const TipTapEditor = dynamic(() => import("./editor"), { ssr: false });
+
+// Constants
+const MAX_FILE_SIZE = 50 * 1024 * 1024;
+const MAX_THUMBNAIL_SIZE = 2 * 1024 * 1024;
 const ACCEPTED_VIDEO_TYPES = [
   "video/mp4",
   "video/mpeg",
@@ -36,200 +36,286 @@ const ACCEPTED_VIDEO_TYPES = [
   "video/x-msvideo",
   "video/webm",
 ];
-
 const ACCEPTED_THUMBNAIL_TYPES = ["image/jpeg", "image/png", "image/gif"];
 
-const UpdateLectureSchema = z.object({
-  title: z.string().min(1),
-  description: z.string().min(1),
+const updateLectureFormSchema = z.object({
+  title: z.string().min(1, { message: "El título es obligatorio" }),
+  description: z.string().optional(),
   file: z
     .instanceof(File)
-    .refine((file) => file !== undefined, {
-      message: "Por favor, selecciona un archivo de video",
-    })
-    .refine((file) => file.size <= MAX_FILE_SIZE, {
+    .refine((file) => !file || file.size <= MAX_FILE_SIZE, {
       message: "El archivo debe ser de 50MB o menos",
     })
-    .refine((file) => ACCEPTED_VIDEO_TYPES.includes(file.type), {
+    .refine((file) => !file || ACCEPTED_VIDEO_TYPES.includes(file.type), {
       message:
         "Por favor, sube un archivo de video válido (mp4, mpeg, mov, avi, webm)",
     })
-    .optional(),
+    .nullish()
+    .transform((file) => file ?? null),
   thumbnail: z
     .instanceof(File)
-    .refine((file) => file !== undefined, {
-      message: "Por favor, selecciona un archivo de video",
+    .refine((file) => !file || file.size < MAX_THUMBNAIL_SIZE, {
+      message: "El archivo debe ser de 2MB o menos",
     })
-    .refine((file) => file.size < MAX_THUMBNAIL_SIZE, {
-      message: "El archivo debe ser de 50MB o menos",
+    .refine((file) => !file || ACCEPTED_THUMBNAIL_TYPES.includes(file.type), {
+      message: "Por favor, sube una imagen válida (jpg, png, gif)",
     })
-    .refine((file) => ACCEPTED_THUMBNAIL_TYPES.includes(file.type), {
-      message:
-        "Por favor, sube un archivo de video válido (mp4, mpeg, mov, avi, webm)",
-    })
-    .optional(),
-  poster_url: z.string().nullish(),
+    .nullish()
+    .transform((file) => file ?? null),
 });
 
-const UpdateLecture = ({ id }: Props) => {
-  const { data, isLoading } = useGetLecture(id);
+interface Props {
+  lectureId: string;
+  slug: string;
+}
 
-  const form = useForm<z.infer<typeof UpdateLectureSchema>>({
-    resolver: zodResolver(UpdateLectureSchema),
+const UpdateLectureForm = ({ lectureId, slug }: Props) => {
+  const router = useRouter();
+  const [isUploading, setIsUploading] = useState(false);
+  const [showVideoUpload, setShowVideoUpload] = useState(false);
+  const [showThumbnailUpload, setShowThumbnailUpload] = useState(false);
+
+  const { data: lecture, isLoading } = useGetLecture(lectureId);
+  const updateLecture = useUpdateLecture();
+
+  const form = useForm<z.infer<typeof updateLectureFormSchema>>({
+    resolver: zodResolver(updateLectureFormSchema),
     defaultValues: {
       title: "",
       description: "",
+      file: null,
+      thumbnail: null,
     },
   });
 
   useEffect(() => {
-    if (data) {
+    if (lecture) {
       form.reset({
-        title: data.title,
-        description: data.description ?? "",
+        title: lecture.title,
+        description: lecture.description ?? "",
+        file: null,
+        thumbnail: null,
       });
     }
-  }, [data]);
+  }, [lecture, form]);
+
+  async function onSubmit(values: z.infer<typeof updateLectureFormSchema>) {
+    setIsUploading(true);
+    try {
+      // Create a clean payload with proper undefined handling
+      const payload: {
+        id: string;
+        title: string;
+        description?: string;
+        file?: File;
+        thumbnail?: File;
+      } = {
+        id: lectureId,
+        title: values.title,
+        description: values.description || undefined,
+      };
+
+      if (showVideoUpload && values.file) {
+        payload.file = values.file;
+      }
+
+      if (showThumbnailUpload && values.thumbnail) {
+        payload.thumbnail = values.thumbnail;
+      }
+
+      await updateLecture.mutateAsync(payload);
+      setIsUploading(false);
+      toast.success("Lección actualizada exitosamente");
+      router.push(`/admin/cursos/${slug}`);
+    } catch (error) {
+      console.error("Lecture update failed:", error);
+      toast.error("Error al actualizar la lección");
+    }
+  }
 
   if (isLoading) {
     return (
-      <div className="flex justify-center items-center h-screen gap-6">
-        <Loader2 className="animate-spin" /> Cargando Datos...
+      <div className="flex items-center justify-center h-screen">
+        <Loader2 className="h-8 w-8 animate-spin" />
       </div>
     );
   }
 
-  if (!data) {
-    return <div>No existe este contenido</div>;
+  if (!lecture) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <p>Lección no encontrada</p>
+      </div>
+    );
   }
 
   return (
     <Form {...form}>
-      <div className="p-4">
-        <Card>
-          <CardHeader>
-            <CardTitle>Editar Contenido</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <FormField
-              control={form.control}
-              name="title"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Nombre</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Titulo" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+      <form onSubmit={form.handleSubmit(onSubmit)}>
+        <Link
+          href={`/admin/cursos/${slug}`}
+          className="text-sm flex items-center space-x-2"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          <p className="text-black hover:underline">Regresar</p>
+        </Link>
+        <h1 className="text-2xl font-bold pt-4">Actualizar Lección</h1>
 
-            <FormField
-              control={form.control}
-              name="description"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Descripción</FormLabel>
-                  <FormControl>
-                    <TipTapEditor
-                      value={field.value || ""}
-                      onChange={field.onChange}
+        <div className="space-y-6">
+          <FormField
+            control={form.control}
+            name="title"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Título</FormLabel>
+                <FormControl>
+                  <Input placeholder="Nombre de la lección" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <div className=" flex gap-6 p-2 pb-6">
+            {lecture.video && !showVideoUpload ? (
+              <div className="space-y-2">
+                <FormLabel className="text-lg font-semibold">
+                  Video Actual
+                </FormLabel>
+                <div className=" space-y-2">
+                  <div className="relative aspect-video max-w-2xl">
+                    <Video
+                      streamType="on-demand"
+                      playbackId={lecture.video.playback_id ?? undefined}
+                      className="rounded-lg"
+                      controls
                     />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </CardContent>
-          <div className="p-6">
-            <h2 className="font-bold">Multimedia</h2>
-            <Card>
-              <CardHeader>
-                <CardTitle>
-                  <div className="pl-6">
-                    <p className="text-foreground text-sm ">
-                      Duración:{" "}
-                      {data?.video?.duration
-                        ? Math.floor(data.video.duration)
-                        : 0}{" "}
-                      segundos
-                    </p>
                   </div>
-                </CardTitle>
-                <CardContent>
-                  <Separator />
+                  <div className="flex justify-end">
+                    <Button
+                      type="button"
+                      onClick={() => {
+                        setShowVideoUpload(true);
+                        form.setValue("file", null);
+                      }}
+                      size="sm"
+                    >
+                      Cambiar Video
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <FormField
+                control={form.control}
+                name="file"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Nuevo Video</FormLabel>
+                    <FormControl>
+                      <VideoDropzone
+                        field={{
+                          ...field,
+                          value: field.value,
+                          onChange: (file: File | null) => {
+                            field.onChange(file);
+                            if (!file) setShowVideoUpload(false);
+                          },
+                        }}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
 
-                  {data?.video && (
-                    <div className="grid grid-cols-3 gap-4">
-                      <div className="col-span-2">
-                        <div className="mt-4">
-                          {data?.video.playback_id ? (
-                            <VideoPlayer
-                              playbackId={data.video.playback_id}
-                              posterUrl={data.poster_url ?? ""}
-                            />
-                          ) : (
-                            <FormField
-                              control={form.control}
-                              name="file"
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormLabel>Archivo</FormLabel>
-                                  <FormControl>
-                                    <VideoDropzone
-                                      field={{
-                                        ...field,
-                                        value: field.value || null,
-                                        onChange: (file: File | null) =>
-                                          field.onChange(file),
-                                      }}
-                                    />
-                                  </FormControl>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
-                          )}
-                        </div>
-                      </div>
-                      <div className="mt-4 text-xs">
-                        <p>Miniatura</p>
-                        {data?.poster_url ? (
-                          <Image
-                            src={data.poster_url ?? ""}
-                            height={320}
-                            width={568}
-                            className="w-auto"
-                            alt={data.title}
-                            priority={true}
-                          />
-                        ) : (
-                          <FormField
-                            control={form.control}
-                            name="thumbnail"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Miniatura</FormLabel>
-                                <FormControl>
-                                  <ImageDropzone field={field} />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </CardContent>
-              </CardHeader>
-            </Card>
+            {lecture.poster_url && !showThumbnailUpload ? (
+              <div className="space-y-2">
+                <FormLabel className="text-lg font-semibold">
+                  Miniatura Actual
+                </FormLabel>
+
+                <div className="space-y-6">
+                  <img
+                    src={lecture.poster_url}
+                    alt="Thumbnail"
+                    className="rounded-lg max-h-[200px] object-cover"
+                  />
+
+                  <div className="flex justify-end">
+                    <Button
+                      type="button"
+                      onClick={() => {
+                        setShowThumbnailUpload(true);
+                        form.setValue("thumbnail", null);
+                      }}
+                      size="sm"
+                    >
+                      Cambiar Miniatura
+                    </Button>
+                  </div>
+                  <p className="text-xs text-pretty text-muted-foreground">
+                    Se recomienda utilizar una imagen de 1920 x 1080 px
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <FormField
+                control={form.control}
+                name="thumbnail"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Nueva Miniatura</FormLabel>
+                    <FormControl>
+                      <ImageDropzone
+                        field={{
+                          ...field,
+                          value: field.value,
+                          onChange: (file: File | null) => {
+                            field.onChange(file);
+                            if (!file) setShowThumbnailUpload(false);
+                          },
+                        }}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
           </div>
-        </Card>
-      </div>
+        </div>
+
+        <FormField
+          control={form.control}
+          name="description"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Contenido</FormLabel>
+              <FormControl>
+                <TipTapEditor
+                  value={field.value ?? ""}
+                  onChange={(value) => field.onChange(value)}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <div className="flex justify-end pt-6">
+          <Button type="submit" disabled={isUploading}>
+            {isUploading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              "Actualizar"
+            )}
+          </Button>
+        </div>
+      </form>
     </Form>
   );
 };
 
-export default UpdateLecture;
+export default UpdateLectureForm;

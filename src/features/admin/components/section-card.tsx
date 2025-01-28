@@ -5,7 +5,6 @@ import { CSS } from "@dnd-kit/utilities";
 import { BookOpenText, ChevronDown, GripVertical } from "lucide-react";
 import LectureCard from "./lecture-card";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import NewLecture from "./new-lecture";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -97,7 +96,7 @@ const SectionCard = (props: Props) => {
               </h2>
               <div className="flex items-center space-x-2">
                 <Link
-                  href={`/admin/cursos/${props.slug}/${column.id}/lectura?numero=${props.totalLectures}`}
+                  href={`/admin/cursos/${props.slug}/${column.id}/leccion?numero=${props.totalLectures}`}
                 >
                   <Button>
                     Añadir <ChevronDown className="h-6 w-6" />

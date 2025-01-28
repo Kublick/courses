@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useCallback } from "react";
+import { useLocalStorage } from "../hooks/use-local-storage";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
@@ -9,6 +10,7 @@ import {
   PlayCircle,
   ChevronDown,
   ChevronRight,
+  Loader2,
 } from "lucide-react";
 import Video from "next-video";
 import { useGetCourse } from "@/features/admin/api/use-get-course";
@@ -69,6 +71,11 @@ export default function SectionCourse({ slug }: Props) {
   const { data: courseData, isLoading } = useGetCourse(slug);
   const [isAsideVisible, setIsAsideVisible] = useState(true);
   const [currentLecture, setCurrentLecture] = useState<Lecture | null>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [videoProgress, setVideoProgress] = useLocalStorage<
+    Record<string, number>
+  >(`course-${slug}-progress`, {});
+
   const [expandedSections, setExpandedSections] = useState<Set<string>>(
     new Set()
   );
@@ -100,18 +107,39 @@ export default function SectionCourse({ slug }: Props) {
     });
   };
 
+  const [videoError, setVideoError] = useState(false);
+
+  // Add error handler function
+  const handleVideoError = useCallback((error: any) => {
+    console.warn("Video playback error:", error);
+    setVideoError(true);
+  }, []);
+
+  // Reset error state when changing lectures
   const selectLecture = (lecture: Lecture) => {
+    setVideoError(false);
     setCurrentLecture(lecture);
     if (!lecture.video) {
       setIsAsideVisible(false);
     }
   };
 
-  // Handle loading state
+  const handleTimeUpdate = () => {
+    if (currentLecture?.video && videoRef.current) {
+      setVideoProgress((prev) => ({
+        ...prev,
+        [currentLecture.video!.id]: videoRef.current!.currentTime,
+      }));
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-screen bg-gray-900">
-        <div className="text-white">Loading course content...</div>
+        <div className="text-white flex items-center space-x-4 ">
+          <Loader2 className="size-6 animate-spin" />
+          <p>Cargando Contenido del curso</p>
+        </div>
       </div>
     );
   }
@@ -127,26 +155,50 @@ export default function SectionCourse({ slug }: Props) {
 
   return (
     <div className="flex flex-col sm:flex-row h-screen bg-background dark">
-      {/* Main content area with video player */}
-      <main className="flex-1 flex flex-col min-h-0 bg-gray-900 text-gray-100">
+      <main className="flex-1 flex flex-col min-h-0 bg-gray-900 text-gray-100 scrollbar-thin">
         <div className="flex-1 relative overflow-hidden bg-black">
           {currentLecture ? (
             currentLecture.video ? (
-              <Video
-                streamType="on-demand"
-                playbackId={currentLecture.video.playback_id}
-                metadata={{
-                  video_id: currentLecture.video.id,
-                  video_title: currentLecture.title,
-                }}
-                poster={
-                  currentLecture.poster_url ||
-                  "/placeholder.svg?height=720&width=1280"
-                }
-                className="absolute inset-0 w-full h-full object-contain"
-              />
+              videoError ? (
+                <div className="absolute inset-0 flex items-center justify-center bg-gray-900">
+                  <div className="text-center p-4">
+                    <h3 className="text-xl font-semibold mb-2">
+                      El video no esta disponible
+                    </h3>
+                    <p className="text-gray-400 mb-4">
+                      Contacta al equipo para reportar el problema
+                    </p>
+                    <Button
+                      variant="outline"
+                      onClick={() => setVideoError(false)}
+                    >
+                      Intentar nuevamente
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <Video
+                  ref={videoRef}
+                  streamType="on-demand"
+                  playbackId={currentLecture.video.playback_id}
+                  metadata={{
+                    video_id: currentLecture.video.id,
+                    video_title: currentLecture.title,
+                  }}
+                  poster={
+                    currentLecture.poster_url ||
+                    "/placeholder.svg?height=720&width=1280"
+                  }
+                  className="absolute inset-0 w-full h-full object-contain"
+                  onTimeUpdate={handleTimeUpdate}
+                  startTime={videoProgress[currentLecture.video.id] || 0}
+                  onError={handleVideoError}
+                  controls
+                  playsInline
+                />
+              )
             ) : (
-              <div className="absolute inset-0 flex items-start justify-center p-8 overflow-y-auto">
+              <div className="absolute inset-0 flex items-start justify-center p-8 overflow-y-clip">
                 <div className="w-full bg-gray-800 rounded-lg p-6">
                   <h2 className="text-2xl font-bold mb-6 text-white">
                     {currentLecture.title}
@@ -157,7 +209,9 @@ export default function SectionCourse({ slug }: Props) {
             )
           ) : (
             <div className="absolute inset-0 flex items-center justify-center">
-              <p className="text-2xl font-bold">Select a lecture to start</p>
+              <p className="text-2xl font-bold">
+                Seleccióna una leccion para iniciar
+              </p>
             </div>
           )}
         </div>
@@ -202,7 +256,7 @@ export default function SectionCourse({ slug }: Props) {
           isAsideVisible ? "translate-x-0" : "translate-x-full"
         } sm:translate-x-0 ${isAsideVisible ? "sm:w-80" : "sm:w-0"}`}
       >
-        <ScrollArea className="h-full">
+        <ScrollArea className="h-full scrollbar-thin scrollbar-track-gray-800 scrollbar-thumb-gray-600 hover:scrollbar-thumb-gray-500">
           <div className="p-4">
             <h2 className="text-xl font-bold mb-4 text-gray-100">
               Course Content
@@ -228,7 +282,7 @@ export default function SectionCourse({ slug }: Props) {
                         className={`p-2 rounded cursor-pointer hover:bg-gray-700 ${
                           currentLecture?.id === lecture.id ? "bg-gray-700" : ""
                         }`}
-                        onClick={() => selectLecture(lecture)}
+                        onClick={() => selectLecture(lecture as Lecture)}
                       >
                         <div className="flex items-center">
                           <PlayCircle className="h-4 w-4 mr-2 text-gray-400" />

@@ -1,14 +1,19 @@
 import UpdateLecture from "@/features/admin/components/update-lecture";
 import React from "react";
 
-type Params = Promise<{ id: string }>;
+interface LecturaPageProps {
+  params: Promise<{
+    slug: string;
+    id: string;
+  }>;
+}
 
-const UpdateLectureById = async ({ params }: { params: Params }) => {
-  const { id } = await params;
+const UpdateLectureById = async ({ params }: LecturaPageProps) => {
+  const { slug, id: lectureId } = await params;
 
   return (
-    <div>
-      <UpdateLecture id={id} />
+    <div className="container p-4">
+      <UpdateLecture lectureId={lectureId} slug={slug} />
     </div>
   );
 };
