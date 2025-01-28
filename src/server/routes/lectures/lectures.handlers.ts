@@ -16,7 +16,7 @@ import {
 } from "./lectures.route";
 import { eq } from "drizzle-orm";
 import { deleteVideo, getMuxUrl } from "@/server/lib/mux";
-import { uploadThumbnail } from "@/lib/s3Actions";
+import { deleteThumbnail, uploadThumbnail } from "@/lib/s3Actions";
 import { deleteLecture } from "../sections/sections.handlers";
 
 export const create: AppRouteHandler<CreateLectureRoute> = async (c) => {
@@ -74,7 +74,6 @@ export const create: AppRouteHandler<CreateLectureRoute> = async (c) => {
         position: Number(position),
         video: videoId,
         poster_url: poster_url,
-        updated_at: new Date().toISOString(),
       })
       .returning();
 
@@ -247,6 +246,10 @@ export const updateOneById: AppRouteHandler<UpdateLectureByIdRoute> = async (
   if (thumbnail) {
     try {
       newPosterUrl = await uploadThumbnail(thumbnail);
+
+      if (existingLecture.poster_url) {
+        await deleteThumbnail(existingLecture.poster_url);
+      }
     } catch (error) {
       console.error("Thumbnail update error:", error);
       return c.json(
@@ -263,7 +266,8 @@ export const updateOneById: AppRouteHandler<UpdateLectureByIdRoute> = async (
     video?: string | null;
     content_type?: string | null;
     poster_url?: string;
-  } = { title };
+    updated_at: string;
+  } = { title, updated_at: new Date().toISOString() };
 
   if (description !== undefined) {
     updateData.description = xss(description);

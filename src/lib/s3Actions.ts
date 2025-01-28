@@ -113,6 +113,6 @@ export const deleteThumbnail = async (url: string) => {
       Key: fileName,
     })
   );
-  console.log("delete thumbnail", data);
+
   return data;
 };
