@@ -28,9 +28,9 @@ const s3 = new S3Client({
 });
 
 export async function getSignedURL(
-  fileType: string = "webp",
-  contentType: string = "image/webp",
-  expiresIn: number = 60
+  fileType = "webp",
+  contentType = "image/webp",
+  expiresIn = 60
 ): Promise<SignedURLResponse> {
   try {
     if (!bucketName || !region) {

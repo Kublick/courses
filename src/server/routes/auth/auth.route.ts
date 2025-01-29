@@ -121,9 +121,25 @@ export const resetPasswordRoute = createRoute({
   },
 });
 
+export const logout = createRoute({
+  tags: ["auth"],
+  path: "/auth/logout",
+  method: "post",
+  responses: {
+    [HttpStatusCodes.OK]: {
+      description: "Logout Success",
+    },
+    [HttpStatusCodes.UNAUTHORIZED]: jsonContent(
+      unAuthorizedSchema,
+      "No active session"
+    ),
+  },
+});
+
 export type UserLoginRoute = typeof login;
 export type VerificationCodeRoute = typeof getVerificationCode;
 export type GetResetPasswordRequest = typeof getResetPasswordRequest;
 export type ResetPasswordRoute = typeof resetPasswordRoute;
+export type LogoutRoute = typeof logout;
 
 // export type CreateUserRoute = typeof create;

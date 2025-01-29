@@ -3,6 +3,7 @@ import { AppRouteHandler } from "@/server/types";
 import db from "@/server/db";
 import {
   GetResetPasswordRequest,
+  LogoutRoute,
   ResetPasswordRoute,
   UserLoginRoute,
   VerificationCodeRoute,
@@ -14,11 +15,14 @@ import * as HttpStatusCodes from "stoker/http-status-codes";
 // import * as HttpStatusPhrases from "stoker/http-status-phrases";
 import {
   createSession,
+  deleteSessionTokenCookie,
   generateSessionToken,
+  invalidateSession,
   setSessionTokenCookie,
 } from "@/server/auth";
 import { nanoid } from "nanoid";
 import { client } from "@/server/client";
+import { getCookie } from "hono/cookie";
 
 export const login: AppRouteHandler<UserLoginRoute> = async (c) => {
   c.var.logger.info("Loggin In User");
@@ -175,4 +179,22 @@ export const resetPassword: AppRouteHandler<ResetPasswordRoute> = async (c) => {
   return c.json({
     message: "Password Updated",
   });
+};
+
+export const logout: AppRouteHandler<LogoutRoute> = async (c) => {
+  c.var.logger.info("Loggin Out User");
+
+  const sessionToken = getCookie(c, "session");
+
+  if (!sessionToken) {
+    return c.redirect("/auth/login");
+  }
+
+  invalidateSession(sessionToken);
+
+  deleteSessionTokenCookie(c);
+
+  setSessionTokenCookie(c, "");
+
+  return c.redirect("/auth/login");
 };

@@ -1,7 +1,8 @@
+import { getUser } from "@/server/lib/utils";
 import React from "react";
 
-const ClientesPage = () => {
-  return <div>ClientesPage</div>;
+const ClientesPage = async () => {
+  return <div>ClientesAdminPage</div>;
 };
 
 export default ClientesPage;

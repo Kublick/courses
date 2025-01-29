@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, type SyntheticEvent } from "react";
 import { useLocalStorage } from "../hooks/use-local-storage";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -16,7 +16,7 @@ import Video from "next-video";
 import { useGetCourse } from "@/features/admin/api/use-get-course";
 
 // Types for our data structure
-type Video = {
+type VideoAsset = {
   id: string;
   status: string;
   playback_id: string;
@@ -27,7 +27,7 @@ type Lecture = {
   id: string;
   title: string;
   description: string;
-  video?: Video;
+  video?: VideoAsset;
   is_published: boolean;
   poster_url: string;
   position: number;
@@ -51,6 +51,7 @@ const DescriptionContent = ({ content }: { content: string }) => {
   return (
     <div
       className="prose prose-invert max-w-none"
+      // biome-ignore lint/security/noDangerouslySetInnerHtml: <explanation>
       dangerouslySetInnerHTML={{
         __html: content
           .replace(
@@ -110,10 +111,13 @@ export default function SectionCourse({ slug }: Props) {
   const [videoError, setVideoError] = useState(false);
 
   // Add error handler function
-  const handleVideoError = useCallback((error: any) => {
-    console.warn("Video playback error:", error);
-    setVideoError(true);
-  }, []);
+  const handleVideoError = useCallback(
+    (event: SyntheticEvent<HTMLVideoElement>) => {
+      console.warn("Video playback error:", event.currentTarget.error);
+      setVideoError(true);
+    },
+    []
+  );
 
   // Reset error state when changing lectures
   const selectLecture = (lecture: Lecture) => {
@@ -125,10 +129,12 @@ export default function SectionCourse({ slug }: Props) {
   };
 
   const handleTimeUpdate = () => {
-    if (currentLecture?.video && videoRef.current) {
+    if (currentLecture?.video?.id && videoRef.current) {
+      const videoId = currentLecture.video.id;
+      const currentTime = videoRef.current.currentTime;
       setVideoProgress((prev) => ({
         ...prev,
-        [currentLecture.video!.id]: videoRef.current!.currentTime,
+        [videoId]: currentTime,
       }));
     }
   };
@@ -215,7 +221,7 @@ export default function SectionCourse({ slug }: Props) {
             </div>
           )}
         </div>
-        {currentLecture && currentLecture.video && (
+        {currentLecture?.video && (
           <div className="p-4 bg-gray-800">
             <h1 className="text-2xl font-bold mb-2 text-gray-100">
               {currentLecture.title}
@@ -264,6 +270,7 @@ export default function SectionCourse({ slug }: Props) {
             {course.sections.map((section) => (
               <div key={section.id} className="mb-4">
                 <button
+                  type="button"
                   className="flex items-center justify-between w-full text-left p-2 rounded hover:bg-gray-700"
                   onClick={() => toggleSection(section.id)}
                 >

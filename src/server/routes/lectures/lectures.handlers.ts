@@ -1,10 +1,10 @@
-import { AppRouteHandler } from "@/server/types";
+import type { AppRouteHandler } from "@/server/types";
 
 import * as HttpStatusCodes from "stoker/http-status-codes";
 import db from "@/server/db";
 import { lectures, videos } from "@/server/db/schema";
 import xss from "xss";
-import {
+import type {
   CreateLectureRoute,
   DeleteLectureByIdRoute,
   LectureByIdRoute,
@@ -246,7 +246,6 @@ export const updateOneById: AppRouteHandler<UpdateLectureByIdRoute> = async (
   if (thumbnail) {
     try {
       newPosterUrl = await uploadThumbnail(thumbnail);
-
       if (existingLecture.poster_url) {
         await deleteThumbnail(existingLecture.poster_url);
       }

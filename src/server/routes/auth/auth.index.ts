@@ -6,6 +6,7 @@ const router = createRouter()
   .openapi(routes.login, handlers.login)
   .openapi(routes.getVerificationCode, handlers.getVerificationCode)
   .openapi(routes.getResetPasswordRequest, handlers.getResetPasswordRequest)
-  .openapi(routes.resetPasswordRoute, handlers.resetPassword);
+  .openapi(routes.resetPasswordRoute, handlers.resetPassword)
+  .openapi(routes.logout, handlers.logout);
 
 export default router;
