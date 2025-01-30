@@ -1,4 +1,11 @@
-import { Session, sessions, User, users } from "@/server/db/schema";
+import {
+  selectUserSchema,
+  SelectUserSchema,
+  Session,
+  sessions,
+  User,
+  users,
+} from "@/server/db/schema";
 import {
   encodeBase32LowerCaseNoPadding,
   encodeHexLowerCase,
@@ -40,7 +47,17 @@ export async function validateSessionToken(
   const sessionId = encodeHexLowerCase(sha256(new TextEncoder().encode(token)));
 
   const [result] = await db
-    .select({ user: users, session: sessions })
+    .select({
+      user: {
+        id: users.id,
+        name: users.name,
+        email: users.email,
+        role: users.role,
+        lastname: users.lastname,
+        username: users.username,
+      },
+      session: sessions,
+    })
     .from(sessions)
     .innerJoin(users, eq(sessions.userid, users.id))
     .where(eq(sessions.id, sessionId));
@@ -48,7 +65,7 @@ export async function validateSessionToken(
   if (!result) {
     return { session: null, user: null };
   }
-  const { user, session } = result;
+  const { session, user } = result;
 
   if (Date.now() >= session.expiresAt.getTime()) {
     await db.delete(sessions).where(eq(sessions.id, session.id));
@@ -63,7 +80,10 @@ export async function validateSessionToken(
       })
       .where(eq(sessions.id, session.id));
   }
-  return { session, user };
+  return {
+    session,
+    user,
+  };
 }
 
 export async function invalidateSession(sessionId: string): Promise<void> {
@@ -71,7 +91,7 @@ export async function invalidateSession(sessionId: string): Promise<void> {
 }
 
 export type SessionValidationResult =
-  | { session: Session; user: User }
+  | { session: Session; user: SelectUserSchema }
   | { session: null; user: null };
 
 export function setSessionTokenCookie(c: Context, token: string): void {

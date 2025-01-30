@@ -10,6 +10,7 @@ import db from "@/server/db";
 import {
   courses,
   emailVerificationCode,
+  lectures,
   PurchaseInsert,
   purchases,
   users,
@@ -61,6 +62,9 @@ export const muxWebHook: AppRouteHandler<MuxWebHookRoute> = async (c) => {
         break;
       case "video.asset.deleted":
         await handleAssetDeleted(data);
+        break;
+      case "video.asset.errored":
+        console.log(data);
         break;
       default:
         logger.warn("Unhandled event type:", JSON.stringify(type));
@@ -185,8 +189,24 @@ async function handleAssetDeleted(
   if (!passthrough) {
     return;
   }
+  try {
+    const video = await db.query.videos.findFirst({
+      where: eq(videos.passthrough, passthrough),
+    });
 
-  await db.delete(videos).where(eq(videos.passthrough, passthrough));
+    if (video) {
+      await db
+        .update(lectures)
+        .set({
+          video: null,
+        })
+        .where(eq(lectures.video, video.id));
+
+      await db.delete(videos).where(eq(videos.id, video.id));
+    }
+  } catch (err) {
+    console.log(err);
+  }
 }
 
 //STRIPE CASES

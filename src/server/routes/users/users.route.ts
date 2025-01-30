@@ -17,7 +17,7 @@ export const list = createRoute({
   responses: {
     [HttpStatusCodes.OK]: jsonContent(
       z.array(selectUserSchema),
-      "The list of tasks"
+      "The list of users"
     ),
   },
 });

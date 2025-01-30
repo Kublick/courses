@@ -80,7 +80,11 @@ export const selectUserSchema = createSelectSchema(users).pick({
   username: true,
   email: true,
   role: true,
+  lastname: true,
+  name: true,
 });
+
+export type SelectUserSchema = z.infer<typeof selectUserSchema>;
 
 export const sessions = pgTable("session", (t) => ({
   id: t.text().primaryKey(),

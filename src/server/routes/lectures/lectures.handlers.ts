@@ -29,6 +29,7 @@ export const create: AppRouteHandler<CreateLectureRoute> = async (c) => {
   let poster_url = "";
 
   if (file) {
+    // Changed from file instanceof File
     // Proceed with video upload to Mux
     const { url, passthrough, id } = await getMuxUrl();
 
@@ -57,7 +58,8 @@ export const create: AppRouteHandler<CreateLectureRoute> = async (c) => {
     videoId = videoInsert.id;
   }
 
-  if (thumbnail instanceof File) {
+  if (thumbnail) {
+    // Changed from thumbnail instanceof File
     poster_url = await uploadThumbnail(thumbnail);
   }
 
@@ -187,9 +189,8 @@ export const updateOneById: AppRouteHandler<UpdateLectureByIdRoute> = async (
   const { id } = c.req.valid("param");
   const { title, description, file, thumbnail } = c.req.valid("form");
 
-  // Check if lecture exists
   const existingLecture = await db.query.lectures.findFirst({
-    where: (lectures, { eq }) => eq(lectures.id, id),
+    where: eq(lectures.id, id),
     with: {
       video: true,
     },
@@ -199,19 +200,13 @@ export const updateOneById: AppRouteHandler<UpdateLectureByIdRoute> = async (
     return c.json({ message: "Lecture not found" }, HttpStatusCodes.NOT_FOUND);
   }
 
-  let videoId = existingLecture.video?.asset_id;
+  let videoId = existingLecture.video?.id;
   let newContentType = existingLecture.content_type;
   let newPosterUrl = existingLecture.poster_url;
 
   // Handle video update
-  if (file) {
+  if (file instanceof File) {
     try {
-      // Only delete existing video if we're uploading a new one
-      if (videoId !== null && videoId !== undefined) {
-        c.var.logger.debug("Deleting existing video");
-        await deleteVideo(videoId);
-      }
-
       const { url, passthrough, id: uploadId } = await getMuxUrl();
 
       const uploadResponse = await fetch(url, {
@@ -220,8 +215,11 @@ export const updateOneById: AppRouteHandler<UpdateLectureByIdRoute> = async (
         headers: { "Content-Type": file.type },
       });
 
-      if (!uploadResponse.ok) throw new Error("Mux upload failed");
+      if (!uploadResponse.ok) {
+        throw new Error("Mux upload failed");
+      }
 
+      // Insert new video record first
       const [videoInsert] = await db
         .insert(videos)
         .values({
@@ -230,6 +228,11 @@ export const updateOneById: AppRouteHandler<UpdateLectureByIdRoute> = async (
           upload_id: uploadId,
         })
         .returning();
+
+      // Only after successful insert, delete the old video
+      if (existingLecture.video) {
+        await deleteVideo(existingLecture.video.asset_id ?? "");
+      }
 
       videoId = videoInsert.id;
       newContentType = file.type;
@@ -243,12 +246,13 @@ export const updateOneById: AppRouteHandler<UpdateLectureByIdRoute> = async (
   }
 
   // Handle thumbnail update
-  if (thumbnail) {
+  if (thumbnail instanceof File) {
     try {
-      newPosterUrl = await uploadThumbnail(thumbnail);
+      const newThumbnailUrl = await uploadThumbnail(thumbnail);
       if (existingLecture.poster_url) {
         await deleteThumbnail(existingLecture.poster_url);
       }
+      newPosterUrl = newThumbnailUrl;
     } catch (error) {
       console.error("Thumbnail update error:", error);
       return c.json(
@@ -258,31 +262,14 @@ export const updateOneById: AppRouteHandler<UpdateLectureByIdRoute> = async (
     }
   }
 
-  // Prepare update data
-  const updateData: {
-    title: string;
-    description?: string;
-    video?: string | null;
-    content_type?: string | null;
-    poster_url?: string;
-    updated_at: string;
-  } = { title, updated_at: new Date().toISOString() };
+  const updateData = {
+    title,
+    updated_at: new Date().toISOString(),
+    ...(description !== undefined && { description: xss(description) }),
+    ...(file && { video: videoId, content_type: newContentType }),
+    ...(thumbnail && { poster_url: newPosterUrl }),
+  };
 
-  if (description !== undefined) {
-    updateData.description = xss(description);
-  }
-
-  // Only update video-related fields if a new file was provided
-  if (file) {
-    updateData.video = videoId;
-    updateData.content_type = newContentType;
-  }
-
-  if (thumbnail) {
-    updateData.poster_url = newPosterUrl || undefined;
-  }
-
-  // Update database
   try {
     const [updatedLecture] = await db
       .update(lectures)
@@ -309,6 +296,7 @@ export const updateOneById: AppRouteHandler<UpdateLectureByIdRoute> = async (
     );
   }
 };
+
 export const publishLecture: AppRouteHandler<PublishLectureRoute> = async (
   c
 ) => {

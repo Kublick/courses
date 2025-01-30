@@ -1,6 +1,9 @@
 "use server";
 import Mux from "@mux/mux-node";
 import { nanoid } from "nanoid";
+import db from "../db";
+import { lectures } from "../db/schema";
+import { eq } from "drizzle-orm";
 
 // Initialize Mux client
 const mux = new Mux({
@@ -29,6 +32,12 @@ export const getMuxUrl = async () => {
 };
 
 export const deleteVideo = async (id: string) => {
-  const result = await mux.video.assets.delete(id);
-  console.log("delete video", result);
+  try {
+    await mux.video.assets.delete(id);
+
+    return true;
+  } catch (err) {
+    console.log("deleted video false");
+    return false;
+  }
 };

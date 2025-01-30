@@ -10,6 +10,7 @@ export const MuxWebhookEventSchema = z.object({
     "video.upload.asset_created",
     "video.upload.created",
     "video.asset.deleted",
+    "video.asset.errored",
   ]),
   data: z.object({
     id: z.string(),

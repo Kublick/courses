@@ -107,23 +107,30 @@ const UpdateLectureForm = ({ lectureId, slug }: Props) => {
         id: string;
         title: string;
         description?: string;
-        file?: File;
-        thumbnail?: File;
+        file?: File | null;
+        thumbnail?: File | null;
       } = {
         id: lectureId,
         title: values.title,
         description: values.description || undefined,
       };
 
-      if (showVideoUpload && values.file) {
+      if (values.file) {
         payload.file = values.file;
       }
 
-      if (showThumbnailUpload && values.thumbnail) {
+      if (values.thumbnail) {
         payload.thumbnail = values.thumbnail;
       }
 
-      await updateLecture.mutateAsync(payload);
+      await updateLecture.mutateAsync({
+        id: payload.id,
+        title: payload.title,
+        description: payload.description,
+        file: payload.file || undefined,
+        thumbnail: payload.thumbnail || undefined,
+      });
+
       setIsUploading(false);
       toast.success("Lección actualizada exitosamente");
       router.push(`/admin/cursos/${slug}`);
