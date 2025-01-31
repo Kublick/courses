@@ -5,11 +5,11 @@ import { redirect } from "next/navigation";
 import React from "react";
 
 const CursosPage = async () => {
-  const { user } = await getUser();
+  // const { user } = await getUser();
 
-  if (!user || user.role !== "admin") {
-    redirect("/");
-  }
+  // if (!user || user.role !== "admin") {
+  //   redirect("/");
+  // }
 
   return (
     <div className="p-6">

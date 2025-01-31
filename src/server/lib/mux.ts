@@ -34,7 +34,6 @@ export const getMuxUrl = async () => {
 export const deleteVideo = async (id: string) => {
   try {
     await mux.video.assets.delete(id);
-
     return true;
   } catch (err) {
     console.log("deleted video false");

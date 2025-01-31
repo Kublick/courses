@@ -1,14 +1,8 @@
 import { z } from "@hono/zod-openapi";
-import {
-  InferInsertModel,
-  InferSelectModel,
-  Many,
-  relations,
-} from "drizzle-orm";
+import { InferInsertModel, InferSelectModel, relations } from "drizzle-orm";
 import {
   boolean,
   customType,
-  integer,
   pgEnum,
   pgTable,
   text,
@@ -77,6 +71,7 @@ export const insertCustomerSchema = createInsertSchema(users, {
 });
 
 export const selectUserSchema = createSelectSchema(users).pick({
+  id: true,
   username: true,
   email: true,
   role: true,
@@ -85,6 +80,12 @@ export const selectUserSchema = createSelectSchema(users).pick({
 });
 
 export type SelectUserSchema = z.infer<typeof selectUserSchema>;
+
+export const updateUserSchema = createUpdateSchema(users).pick({
+  name: true,
+  email: true,
+  lastname: true,
+});
 
 export const sessions = pgTable("session", (t) => ({
   id: t.text().primaryKey(),

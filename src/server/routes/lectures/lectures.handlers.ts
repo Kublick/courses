@@ -29,8 +29,6 @@ export const create: AppRouteHandler<CreateLectureRoute> = async (c) => {
   let poster_url = "";
 
   if (file) {
-    // Changed from file instanceof File
-    // Proceed with video upload to Mux
     const { url, passthrough, id } = await getMuxUrl();
 
     const uploadResponse = await fetch(url, {
@@ -45,7 +43,6 @@ export const create: AppRouteHandler<CreateLectureRoute> = async (c) => {
       throw new Error("Video upload to Mux failed");
     }
 
-    // Insert video metadata into the `videos` table
     const [videoInsert] = await db
       .insert(videos)
       .values({
