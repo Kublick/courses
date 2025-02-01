@@ -1,0 +1,1 @@
+ALTER TABLE "purchases" ADD COLUMN "order_id" text DEFAULT concat('INCRE', lpad(nextval('order_sequence')::text, 4, '0')) NOT NULL;

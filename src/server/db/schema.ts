@@ -1,5 +1,10 @@
 import { z } from "@hono/zod-openapi";
-import { InferInsertModel, InferSelectModel, relations } from "drizzle-orm";
+import {
+  InferInsertModel,
+  InferSelectModel,
+  relations,
+  sql,
+} from "drizzle-orm";
 import {
   boolean,
   customType,
@@ -8,6 +13,7 @@ import {
   text,
   timestamp,
   uuid,
+  pgSequence,
 } from "drizzle-orm/pg-core";
 import {
   createSchemaFactory,
@@ -152,8 +158,22 @@ export const userRelations = relations(users, ({ many }) => ({
   }),
 }));
 // Purchases
+
+export const orderSequence = pgSequence("order_sequence", {
+  startWith: 1,
+  increment: 1,
+  minValue: 1,
+  maxValue: 9999,
+});
+
 export const purchases = pgTable("purchases", (t) => ({
   id: t.uuid().primaryKey().defaultRandom(),
+  order_id: t
+    .text("order_id")
+    .notNull()
+    .default(
+      sql`concat('INCRE', lpad(nextval('order_sequence')::text, 4, '0'))`
+    ),
   user_id: t
     .uuid()
     .notNull()
@@ -161,24 +181,18 @@ export const purchases = pgTable("purchases", (t) => ({
   product_id: t
     .uuid()
     .notNull()
-    .references(() => courses.id), // Assuming `courses` are the products
-  stripe_id: t.text().notNull(), // Stripe Payment Intent or Session ID
+    .references(() => courses.id),
+  stripe_id: t.text().notNull(),
   price: numericCasted({ precision: 10, scale: 2 }).notNull(),
+  payment_method: t.text(),
+  payment_status: t.text(),
+  type: t.text(),
   created_at: t.timestamp({ mode: "string" }).defaultNow().notNull(),
 }));
 
 export type Purchase = InferSelectModel<typeof purchases>;
 
 export type PurchaseInsert = InferInsertModel<typeof purchases>;
-
-export const selectPurchaseSchema = createSelectSchema(purchases).pick({
-  id: true,
-  user_id: true,
-  product_id: true,
-  stripe_id: true,
-  price: true,
-  created_at: true,
-});
 
 export const purchaseRelations = relations(purchases, ({ one }) => ({
   user: one(users, {
@@ -243,6 +257,21 @@ export const selectCourseSchema = createSelectSchema(courses).pick({
 export const courseRelations = relations(courses, ({ many }) => ({
   sections: many(sections),
 }));
+
+export const selectPurchaseSchema = createSelectSchema(purchases)
+  .pick({
+    id: true,
+    user_id: true,
+    stripe_id: true,
+    price: true,
+    created_at: true,
+    payment_method: true,
+    payment_status: true,
+    order_id: true,
+  })
+  .extend({
+    product: selectCourseSchema,
+  });
 
 export const sections = pgTable("sections", (t) => ({
   id: t.uuid().primaryKey().defaultRandom(),

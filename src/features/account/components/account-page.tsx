@@ -1,10 +1,12 @@
 "use client";
 import { Button } from "@/components/ui/button";
-import { User, Lock, ShoppingBag } from "lucide-react";
+import { User, Lock, ShoppingBag, ChevronLeft, ArrowLeft } from "lucide-react";
 import React, { useState } from "react";
 import ProfileForm from "./profile-form";
 import { useGetCustomer } from "../api/use-get-customer";
 import PasswordResetForm from "./password-reset-form";
+import PurchaseHistory from "./purchase-history";
+import Link from "next/link";
 
 interface Props {
   id: string;
@@ -22,6 +24,14 @@ const AccountPage = ({ id }: Props) => {
 
   return (
     <div className="container mx-auto py-10">
+      <div>
+        <Link href="/" className="pb-4">
+          <Button variant="ghost" className="flex space-x-4 items-center ">
+            <ArrowLeft className="size-4" />
+            Regresar
+          </Button>
+        </Link>
+      </div>
       <h1 className="text-3xl font-bold mb-6">Mi Cuenta</h1>
       <div className="flex flex-col md:flex-row gap-6">
         <aside className="w-full md:w-64">
@@ -66,7 +76,7 @@ const AccountPage = ({ id }: Props) => {
             </div>
           )}
           {activeSection === "password" && <PasswordResetForm id={id} />}
-          {activeSection === "purchases" && <p>Compras</p>}
+          {activeSection === "purchases" && <PurchaseHistory id={id} />}
         </main>
       </div>
     </div>

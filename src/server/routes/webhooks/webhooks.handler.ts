@@ -269,6 +269,7 @@ async function handleCheckoutSessionCompleted(
       });
 
     const items = await fetchLineItems(session.id);
+    const intent = await getCardType(session.payment_intent as string);
 
     const stripe_product_id = items[0].price?.product as string;
 
@@ -276,27 +277,34 @@ async function handleCheckoutSessionCompleted(
       where: eq(courses.stripe_product_id, stripe_product_id),
     });
 
-    const purchasedItem: PurchaseInsert = {
-      user_id: customer.id,
-      stripe_id: items[0].price?.id ?? "",
-      product_id: course?.id ?? "",
-      price: items[0].amount_total,
-    };
+    if (intent.status === "succeeded") {
+      const purchasedItem: PurchaseInsert = {
+        user_id: customer.id,
+        stripe_id: items[0].price?.id ?? "",
+        product_id: course?.id ?? "",
+        price: items[0].amount_total,
+        payment_method: intent.cardType ?? "Tarjeta",
+        payment_status: intent.status,
+      };
 
-    await db.insert(purchases).values(purchasedItem);
+      await db.insert(purchases).values(purchasedItem);
 
-    // Step 3: Send the email
-    await client.api.email.$post({
-      json: {
-        name: name ? name : "Colega",
-        subject: "Bienvenido al curso",
-        to: email,
-        link: `${process.env.NEXT_PUBLIC_URL}/auth/registro/${verificationCode}`,
-        type: "welcome",
-      },
-    });
+      // Step 3: Send the email
+      await client.api.email.$post({
+        json: {
+          name: name ? name : "Colega",
+          subject: "Bienvenido al curso",
+          to: email,
+          link: `${process.env.NEXT_PUBLIC_URL}/auth/registro/${verificationCode}`,
+          type: "welcome",
+        },
+      });
 
-    return { customer, verificationCode: code };
+      return { customer, verificationCode: code };
+    } else {
+      // send email of payment fairule
+      console.log("Payment failed");
+    }
   } catch (error) {
     console.error("Error creating user or sending email:", error);
     throw error;
@@ -310,10 +318,24 @@ const fetchLineItems = async (
 
   try {
     const lineItems = await stripe.checkout.sessions.listLineItems(sessionId);
-    console.log(lineItems);
-    return lineItems.data; // Array of line items
+
+    return lineItems.data;
   } catch (error) {
     console.error("Error fetching line items:", error);
     throw error;
   }
+};
+
+export const getCardType = async (intentId: string) => {
+  const stripe = initializeStripe();
+
+  const paymentIntent = await stripe.paymentIntents.retrieve(intentId);
+
+  const paymentMethod = await stripe.paymentMethods.retrieve(
+    paymentIntent.payment_method as string
+  );
+
+  const cardType = paymentMethod.card?.brand;
+
+  return { status: paymentIntent.status, cardType: cardType };
 };

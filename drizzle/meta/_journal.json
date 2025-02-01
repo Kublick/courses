@@ -120,6 +120,20 @@
       "when": 1737061151852,
       "tag": "0016_silent_clint_barton",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1738373741821,
+      "tag": "0017_flat_luminals",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1738373781721,
+      "tag": "0018_boring_kingpin",
+      "breakpoints": true
     }
   ]
 }

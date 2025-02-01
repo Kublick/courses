@@ -4,9 +4,13 @@ import {
   CreatePaymentRoute,
   PaymentRequestSchema,
   CheckoutRoute,
+  GetCustomerPaymentsRoute,
 } from "./payments.route";
 import * as HttpStatusCodes from "stoker/http-status-codes";
 import { z } from "zod";
+import db from "@/server/db";
+import { purchases } from "@/server/db/schema";
+import { eq } from "drizzle-orm";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
   apiVersion: "2024-12-18.acacia",
@@ -90,6 +94,36 @@ export const checkOutPayment: AppRouteHandler<CheckoutRoute> = async (c) => {
 
     return c.json(
       { message: "Internal Server Error" },
+      HttpStatusCodes.INTERNAL_SERVER_ERROR
+    );
+  }
+};
+
+export const getCustomerPayments: AppRouteHandler<
+  GetCustomerPaymentsRoute
+> = async (c) => {
+  const { customerId } = c.req.valid("param");
+
+  try {
+    const data = await db.query.purchases.findMany({
+      where: eq(purchases.user_id, customerId),
+      orderBy: (purchases, { desc }) => [desc(purchases.created_at)],
+      with: {
+        product: true,
+      },
+    });
+
+    if (!data || data === undefined) {
+      return c.json(
+        { message: "Purchases from that customer not found" },
+        HttpStatusCodes.NOT_FOUND
+      );
+    }
+
+    return c.json(data, HttpStatusCodes.OK);
+  } catch (err) {
+    return c.json(
+      { message: "An error occurred" },
       HttpStatusCodes.INTERNAL_SERVER_ERROR
     );
   }

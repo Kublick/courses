@@ -108,10 +108,10 @@ export const getResetPasswordRequest: AppRouteHandler<
     .from(users)
     .where(eq(users.email, email));
 
-  if (!existingUser) {
+  if (existingUser === undefined) {
     return c.json(
       {
-        message: "Verifique email y contraseña",
+        message: "No detectamos un usuario con ese correo",
       },
       HttpStatusCodes.NOT_FOUND
     );
